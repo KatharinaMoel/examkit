@@ -1,0 +1,8 @@
+[
+ {"id": "ex-basic-def", "deck": "terms", "q": "What is a basic?", "a": "The smallest unit this example teaches.",
+  "key": ["smallest unit"], "src": "note:intro#What a basic is", "p": 1, "ctx": "From the intro note.", "ctx_src": "note", "covers": ["1.1"]},
+ {"id": "ex-svc-thing", "deck": "signals", "q": "Which service is called Thing?", "a": "Thing Service.",
+  "key": ["Thing Service"], "src": "guide:svc:thing", "p": 2, "ctx": "Listed in the guide.", "ctx_src": "guide", "covers": ["svc:thing"]},
+ {"id": "ex-model", "deck": "terms", "q": "What does an LLM remember here?", "a": "Something unsourced.",
+  "key": ["unsourced"], "src": "source:dummy.md", "p": 3, "ctx": "Background from model memory.", "ctx_src": "model"}
+]

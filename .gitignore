@@ -1,0 +1,14 @@
+# exam content and sources never enter this public repo
+exams/*
+!exams/.gitkeep
+**/build/
+**/sources/
+!example/sources/
+__pycache__/
+*.pyc
+.pytest_cache/
+# pycharm workspace, local IDE files
+.idea/
+# local planning docs (German, personal context) — kept out of the public repo for now
+docs/superpowers/
+

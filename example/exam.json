@@ -1,0 +1,14 @@
+{
+  "id": "example",
+  "title": "Example Exam",
+  "exam_code": "EX-001",
+  "guide": {"url": "https://example.org/guide", "fetched": "2026-10-07", "source": "sources/dummy.md"},
+  "languages": ["en"],
+  "ui_language": "en",
+  "decks": {"signals": "Signals", "terms": "Terms"},
+  "priorities": {"1": "Core", "2": "Depth", "3": "Background"},
+  "notes_dir": "notes",
+  "artifact_url": null,
+  "storage_key": "examkit-example-v1",
+  "grading_prompt": "You grade an answer to a flashcard for the exam {exam_code} ({title})."
+}
