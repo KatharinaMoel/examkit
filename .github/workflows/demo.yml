@@ -1,0 +1,45 @@
+# Tests on every push and pull request; the example exam goes to GitHub Pages from main.
+# Pages must be enabled once in the repository settings with source "GitHub Actions".
+name: demo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: install (python-markdown, pytest)
+        run: python3 -m pip install -r requirements.txt pytest
+      - name: no exam content, sources or build output tracked
+        run: git -c core.quotepath=off ls-files | python3 engine/check_tracked.py
+      - name: tests (smoke and PDF tests run when the runner's google-chrome is found, else they are listed as skipped)
+        run: python3 -m pytest -q -rs
+      - name: build the example exam
+        run: python3 engine/build.py example
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: example/build
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

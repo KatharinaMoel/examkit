@@ -48,6 +48,13 @@
   "reset_final": "Reset for good",
   "reset_final_n": "Reset for good ({n})",
   "reset_done": "Reset done.",
+  "export_btn": "Save progress",
+  "import_btn": "Load progress",
+  "export_done": "Progress file offered for download.",
+  "export_failed": "Saving the progress file failed.",
+  "import_done": "{n} cards merged; for every card the newer grade won.",
+  "import_bad": "Not an examkit progress file.",
+  "import_wrong_exam": "This file belongs to another exam.",
   "undo": "Undo",
   "close": "Close",
   "cancel": "Cancel",
@@ -146,5 +153,6 @@
   "cov_p1": " · {n} P1",
   "cov_none": "Nothing found.",
   "notes_search": "Search notes …",
-  "notes_none": "No notes built."
+  "notes_none": "No notes built.",
+  "speech_superset": " includes "
 }

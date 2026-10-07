@@ -1,4 +1,6 @@
+<!doctype html>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>/*TITLE*/</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,7 +38,7 @@ header{display:flex;flex-direction:column;gap:10px}
 .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 h1{font-size:19px;margin:0;letter-spacing:.01em;text-wrap:balance}
 .sync{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
-/* Fortschritt: die vier Faecher des Leitner-Kastens */
+/* Progress: the four boxes of the Leitner system */
 .boxes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .box{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;gap:2px}
 .box b{font-family:var(--mono);font-size:17px;font-weight:500;font-variant-numeric:tabular-nums}
@@ -52,7 +54,7 @@ h1{font-size:19px;margin:0;letter-spacing:.01em;text-wrap:balance}
 .hoerstate{font-family:var(--mono);font-size:12.5px;color:var(--accent)}
 .hoerstate:empty{display:none}
 .chip small{font-family:var(--mono);font-size:11px;opacity:.75;margin-left:4px}
-/* Die Karte: liniert wie eine Karteikarte */
+/* The card: ruled like an index card */
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 0 var(--line);overflow:hidden}
 .card-head{display:flex;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:2px solid var(--bad-soft);font-family:var(--mono);font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .q,.solution .ctx{white-space:pre-line}
@@ -96,11 +98,11 @@ footer.build{max-width:560px;margin:14px auto 0;font-family:var(--mono);font-siz
 .resetbox button{margin:0 2px}
 .resetbox button[disabled]{opacity:.5;cursor:default;text-decoration:none}
 .foot button{font:inherit;font-size:13px;background:none;border:none;color:var(--accent);padding:0;cursor:pointer;text-decoration:underline;align-self:flex-start}
-/* Reiter */
+/* Tabs */
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--line);padding:3px;border-radius:10px}
 .tab{font:inherit;font-size:14px;font-weight:700;border:none;border-radius:8px;padding:8px 4px;background:transparent;color:var(--muted);cursor:pointer;min-height:40px}
 .tab[aria-selected="true"]{background:var(--card);color:var(--ink)}
-/* Abdeckung und Notizen */
+/* Coverage and notes */
 .search{font:inherit;font-size:16px;width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);padding:10px 12px}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .panel h2,.grp{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0}
@@ -124,7 +126,7 @@ details.cov .covnotes button{font:inherit;font-size:13px;border:1px solid var(--
 .notes-nav{display:flex;flex-direction:column;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .navgrp{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:6px 0 2px}
 .navlink{display:flex;flex-direction:column;padding:6px 8px;border-radius:7px;text-decoration:none;color:var(--ink)}
-.navlink:hover{background:var(--accent-soft)}.navlink.off{display:none}
+.navlink:hover{background:var(--accent-soft)}.navlink.off{display:none}.navgrp.off{display:none}
 .navtitle{font-size:15px;font-weight:700}.navsub{font-size:12.5px;color:var(--muted)}
 .note{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:14px;font-size:15.5px;line-height:1.55;overflow-wrap:anywhere}
 .note .notehead h1{font-size:19px;margin:0}.note .notesub{margin:2px 0 0;color:var(--muted);font-size:13.5px}
@@ -217,6 +219,10 @@ details.cov .covnotes button{font:inherit;font-size:13px;border:1px solid var(--
     <div id="hist" hidden></div>
     <button id="reset" type="button" data-ui="reset_btn"></button>
     <div id="resetbox" class="resetbox" hidden></div>
+    <button id="export" type="button" data-ui="export_btn"></button>
+    <button id="import" type="button" data-ui="import_btn"></button>
+    <input id="importfile" type="file" accept="application/json,.json" hidden>
+    <span id="importstate" aria-live="polite"></span>
   </div>
   </div>
   </section>
@@ -245,7 +251,7 @@ document.getElementById('build-stamp').textContent = T('build_stamp', {t: BUILD.
 </script>
 <script>
 (function(){
-// Reiter: Karten, Abdeckung, Notizen, Plan. Gemerkt wird der zuletzt offene Reiter (localStorage).
+// Tabs: Cards, Coverage, Notes, Plan. The tab that was open last is remembered (localStorage).
 const COV = JSON.parse(document.getElementById('coverage').textContent);
 const VIEWS = ['cards','coverage','notes','plan'];
 const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -262,7 +268,7 @@ function show(which){
 window.examkitShow = show;
 for(const v of VIEWS) document.getElementById('tab-'+v).onclick = ()=>show(v);
 
-// Abdeckung: je Lernziel, Dienst und Konzept die Zahl der Karten (covers) und Notizen (Frontmatter covers)
+// Coverage: per objective, service and concept, the number of cards (covers) and notes (frontmatter covers)
 const out = document.getElementById('coverage-out'), q = document.getElementById('cov-q'), gaps = document.getElementById('cov-gaps');
 const dot = s => `<i class="dot ${s}" aria-label="${esc(T(`cov_legend_${s}`))}"></i>`;
 const sum = k => { const s = COV.summary[k]; return T('cov_sum', {green: s.green, yellow: s.yellow, red: s.red, total: s.total}); };
@@ -327,6 +333,12 @@ function filter(){
     sec.hidden = !on;
     const a = nav.querySelector(`[data-slug="${CSS.escape(sec.id.slice(5))}"]`); if(a) a.classList.toggle('off', !on);
   }
+  // A group label whose links are all hidden is hidden too; label and links are siblings, so walk to the next label.
+  for(const g of nav.querySelectorAll('.navgrp')){
+    let any = false;
+    for(let el = g.nextElementSibling; el && !el.classList.contains('navgrp'); el = el.nextElementSibling) if(!el.classList.contains('off')) any = true;
+    g.classList.toggle('off', !any);
+  }
 }
 q.addEventListener('input', filter);
 let mermaidState = 0; // 0 not loaded, 1 loading, 2 drawn
@@ -368,14 +380,14 @@ const BYID = Object.fromEntries(CARDS.map(c=>[c.id,c]));
 const DECKS = {alle: T('deck_all'), ...(CONFIG.decks||{})};
 // Card source note:<slug>#<heading> -> jump into the notes tab
 const noteRef = src => { const m = /^note:([^#]+)#(.+)$/.exec(String(src)); return m ? {slug: m[1], heading: m[2]} : null; };
-// Zufallsrang je Karte, bei jedem Laden neu: mischt innerhalb gleicher Prioritaet bzw. gleichen Fachs
+// Random rank per card, re-drawn on every load: shuffles within the same priority or the same box
 const RANG = Object.fromEntries(CARDS.map(c=>[c.id, Math.random()]));
-// Wiederholung nach Kartenzahl statt nach Uhrzeit: Pausen kosten nichts, nichts staut sich.
-// Jede Bewertung bekommt eine laufende Nummer k; der Zaehler ist die hoechste vergebene Nummer.
-// Eine Karte ist faellig, sobald der Zaehler ihre Position dn erreicht.
+// Repetition by card count instead of clock time: pauses cost nothing, nothing piles up.
+// Every grade gets a running number k; the counter is the highest number handed out.
+// A card is due as soon as the counter reaches its position dn.
 const GAP = {1: 20, 2: 100, 3: 250};
-const TEIL = 50;      // "Teilweise": eigener, laengerer Abstand
-const NEU_JE = 2;     // solange es neue Karten gibt: 2 neue, dann 1 Wiederholung
+const TEIL = 50;      // "Teilweise" (partly): its own, longer interval
+const NEU_JE = 2;     // while there are new cards: 2 new, then 1 repetition
 const LATER = 30;
 const LS = CONFIG.storage_key;
 
@@ -389,19 +401,19 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const st = id => state.cards[id] || {b:0,r:0,w:0,t:0};
 const counter = () => Object.values(state.cards).reduce((m,S)=>Math.max(m, S.k||0), 0);
-// Karten aus der Zeit-Version haben noch kein dn: feste, je Karte gestreute Position,
-// damit sie ueber die naechsten Durchgaenge verteilt wiederkommen statt alle auf einmal
+// Cards from the time-based version have no dn yet: a fixed position, spread per card,
+// so they come back over the next rounds instead of all at once
 function hash(id){ let h=0; for(const ch of id) h=(h*31+ch.charCodeAt(0))|0; return Math.abs(h); }
 const dueAt = (id, S) => S.dn!=null ? S.dn : (S.b>0 ? 1 + hash(id) % GAP[Math.min(3,S.b)] : 0);
 
 function saveLocal(){ try{ localStorage.setItem(LS, JSON.stringify({cards:state.cards, ui:{deck:ui.deck,p1:ui.p1}})); }catch(e){} }
 
-// Eigenes Etikett schlaegt die Karten-Prioritaet: "hoch" = Prio 1, "niedrig" = Prio 3
+// A custom label beats the card priority: "hoch" (high) = priority 1, "niedrig" (low) = priority 3. 'alle' (German for all) is the stored value of the all-decks filter and part of the frozen storage protocol
 const prio = c => { const u = st(c.id).u; return u==='hoch' ? 1 : u==='niedrig' ? 3 : c.p; };
 function base(){
   return CARDS.filter(c => (ui.deck==='alle'||c.deck===ui.deck) && (!ui.p1||prio(c)===1) && (!ui.weak||(st(c.id).w>0 && st(c.id).u!=='niedrig')));
 }
-// Durchgehmodus: nur die Karten eines Fachs (angetippter Kasten)
+// Round mode: only the cards of one box (the box that was tapped)
 const fachOf = id => Math.min(3, st(id).b);
 function pool(){ const B = base(); return ui.fach==null ? B : B.filter(c=>fachOf(c.id)===ui.fach); }
 function counts(){
@@ -419,7 +431,7 @@ const FACHNAME = [0,1,2,3].map(i=>T(`box_${i}`));
 function setFach(f){ ui.fach = (f===ui.fach) ? null : f; ui.fachSeen = new Set(); ui.cur = null; next(); }
 function pick(){
   if(ui.fach!=null){
-    // Jede Karte des Fachs einmal, wichtigste zuerst, ohne Wiederholungsabstand
+    // Every card of the box once, most important first, without a repetition gap
     const rest = pool().filter(c=>!ui.fachSeen.has(c.id)).sort((a,b)=>prio(a)-prio(b) || RANG[a.id]-RANG[b.id]);
     return rest[0]||null;
   }
@@ -429,10 +441,10 @@ function pick(){
   const seen = cand.filter(c=>st(c.id).b>0);
   const due = seen.filter(c=>at(c)<=N).sort((a,b)=>st(a.id).b-st(b.id).b || prio(a)-prio(b) || RANG[a.id]-RANG[b.id]);
   const fresh = cand.filter(c=>st(c.id).b===0 && at(c)<=N).sort((a,b)=>prio(a)-prio(b) || RANG[a.id]-RANG[b.id]);
-  // Erster Durchlauf soll vorankommen: nach NEU_JE neuen Karten eine faellige Wiederholung
+  // The first pass should make progress: after NEU_JE new cards, one due repetition
   if(fresh.length && (!due.length || ui.newRun < NEU_JE)) return fresh[0];
   if(due.length) return due[0];
-  // Nichts faellig, nichts Neues: die Karte, die als naechste dran waere
+  // Nothing due, nothing new: the card that would come next
   const rest = (cand.length?cand:P).slice().sort((a,b)=>at(a)-at(b) || RANG[a.id]-RANG[b.id]);
   return rest[0]||null;
 }
@@ -516,14 +528,14 @@ function speak(text, lang){
   say([[text, lang || T('tts_lang')]]);
 }
 
-// Vorlesen: Satz fuer Satz (lange Einzelaeusserungen brechen in manchen Browsern ab), Stimme je Sprache.
-// Das Promise loest spaetestens nach einer grosszuegigen Zeitgrenze auf, falls "onend" ausbleibt.
+// Read aloud: sentence by sentence (long single utterances break off in some browsers), voice per language.
+// The promise resolves after a generous time limit at the latest, in case "onend" never fires.
 // Language for reading a card aloud: the card's `lang` via CONFIG.tts (BCP-47), else a word heuristic (German or English)
 const DEWORT = /[äöüß]|\b(der|die|das|und|ist|nicht|mit|ein|eine|wird|oder|bei|im|zu|kein|nur|statt)\b/i;
 const TTS = Object.assign({de:'de-DE', en:'en-US'}, CONFIG.tts||{});
 const cardLang = (c, text) => c.lang ? (TTS[c.lang] || c.lang) : (DEWORT.test(String(text)) ? TTS.de : TTS.en);
-const sprech = t => String(t).replace(/\s*[→–]\s*/g,', ').replace(/\s*[·•]\s*/g,'. ').replace(/⊃/g,' umfasst ').replace(/\s+/g,' ').trim();
-// Zeilen einzeln, lange Zeilen an Satzenden, kurze Saetze (z.B. "A.") wieder zu Stuecken bis ~220 Zeichen zusammen
+const sprech = t => String(t).replace(/\s*[→–]\s*/g,', ').replace(/\s*[·•]\s*/g,'. ').replace(/⊃/g, T('speech_superset')).replace(/\s+/g,' ').trim();
+// Lines one by one, long lines split at sentence ends, short sentences (e.g. "A.") joined back into pieces of up to ~220 characters
 function stuecke(text){
   const out = [];
   for(const line of String(text).split(/\n+/)){
@@ -560,8 +572,8 @@ function say(parts){
   });
 }
 
-// Hoermodus: Frage vorlesen, Denkpause, Antwort vorlesen, dann tippen oder (Schalter) per Sprache ablegen.
-// Jeder Durchlauf hat eine Nummer; tippt man dazwischen, startet die naechste Karte einen neuen und der alte bricht ab.
+// Listening mode: read the question, thinking pause, read the answer, then tap or (switch) grade by voice.
+// Every pass has a number; if you tap in between, the next card starts a new one and the old one aborts.
 const LSA = LS + '-hoer';
 const hoer = {on:false, paused:false, voice:false, pause:10, token:0, rec:null, ac:null, lock:null, micOff:false};
 try{ const h = JSON.parse(localStorage.getItem(LSA)||'null'); if(h){ hoer.voice = !!h.voice; if([5,10,20].includes(h.pause)) hoer.pause = h.pause; } }catch(e){}
@@ -606,7 +618,7 @@ function listen(ms){
     try{ r.start(); }catch(e){ fin({err:'start'}); }
   });
 }
-// Eindeutig heisst: genau eine Bedeutung in einer der erkannten Varianten
+// Unambiguous means: exactly one meaning in one of the recognised variants
 const W = s => new RegExp('(^|[\\s.,!?])(' + s + ')(?=$|[\\s.,!?])');
 const WORT = [[W(T('voice_stop')),'stop'], [W(T('voice_again')),'again'], [W(T('voice_later')),'later'],
   [W(T('voice_partly')),1], [W(T('voice_yes')),2], [W(T('voice_no')),0]];
@@ -627,7 +639,7 @@ async function hoerCard(){
   const t = ++hoer.token, c = ui.cur, alive = ()=>hoer.on && !hoer.paused && t===hoer.token && ui.cur===c;
   hoerStopRec();
   if(!c){ hoerUI(T('hoer_none')); say([[T('hoer_none'), T('tts_lang')]]); return; }
-  // Nach "Weiter" bei schon aufgedeckter Karte: gleich mit der Antwort beginnen
+  // After "Weiter" (continue) with the card already revealed: start with the answer right away
   if(!ui.revealed){
     hoerUI(T('hoer_q'));
     await say([[c.q, cardLang(c, c.q)]]); if(!alive()) return;
@@ -661,7 +673,7 @@ async function hoerCard(){
 }
 function hoerStart(){
   hoer.on = true; hoer.paused = false; hoer.micOff = false;
-  // Ton und Sprache muessen im Tipp-Ereignis entsperrt werden (iOS)
+  // Sound and speech must be unlocked inside the tap event (iOS)
   try{ hoer.ac = hoer.ac || new (window.AudioContext||window.webkitAudioContext)(); hoer.ac.resume(); }catch(e){}
   lockOn();
   if(!window.speechSynthesis){ hoerUI(T('tts_unsupported')); hoer.on = false; return; }
@@ -674,7 +686,7 @@ function hoerStop(){
   hoerUI('');
 }
 $('hoerbtn').onclick = ()=> hoer.on ? hoerStop() : hoerStart();
-// Pause: Vorlesen/Zuhoeren sofort abbrechen; "Weiter" setzt bei der aktuellen Karte wieder an (Frage oder, falls aufgedeckt, Antwort)
+// Pause: stop reading/listening at once; "Weiter" (continue) resumes at the current card (the question or, if revealed, the answer)
 $('hoerhalt').onclick = ()=>{
   if(!hoer.on) return;
   if(!hoer.paused){ hoer.paused = true; hoer.token++; hoerStopRec(); try{ speechSynthesis.cancel(); }catch(e){} hoerUI(T('hoer_paused')); return; }
@@ -708,10 +720,10 @@ async function check(c, answer){
   if(ui.cur===c && ui.revealed) render();
 }
 
-// Eine Bewertung auf einen Kartenstand anwenden (auch fuer Korrekturen aus dem Verlauf)
+// Apply a grade to a card state (also for corrections from the history)
 function applyGrade(prev, g){
   const S = Object.assign({r:0, w:0}, prev); const N = counter() + 1;
-  // Neue Karte gleich gewusst: direkt Fach 2, sonst braeuchte sie drei Durchgaenge bis "sitzt"
+  // New card known right away: straight to box 2, otherwise it would need three rounds to reach "sitzt" (settled)
   if(g===2){ S.b = S.b===0 ? 2 : Math.min(3, S.b+1); S.r++; }
   else if(g===1){ S.b = Math.max(1, S.b-1); }
   else { S.b = 1; S.w++; }
@@ -727,7 +739,7 @@ function grade(c, g){
   remember(c.id); next();
 }
 
-// Verlauf der letzten Bewertungen: lokal und in der Datenbank (fortschritt/verlauf), damit er auf allen Geraeten gleich ist
+// History of the latest grades: local and in the database (fortschritt/verlauf), so it is the same on all devices
 const LSH = LS + '-verlauf', HMAX = 50, GNAME = [0,1,2].map(i=>T(`grade_${i}`));
 let hist = []; try{ hist = JSON.parse(localStorage.getItem(LSH)||'[]'); }catch(e){}
 let histRef = null;
@@ -735,7 +747,7 @@ function saveHist(){
   try{ localStorage.setItem(LSH, JSON.stringify(hist)); }catch(e){}
   if(histRef) histRef.set({e: hist}).catch(()=>{});
 }
-// Eintraege zweier Geraete zusammenfuehren: gleiche Bewertung = gleiche Karte + gleicher Zeitpunkt; die zuletzt geaenderte Fassung gewinnt
+// Merge the entries of two devices: same grade = same card + same time; the most recently changed version wins
 function mergeHist(remote){
   const m = new Map();
   for(const h of [...hist, ...(remote||[])]){ const k = h.id+'@'+h.t, o = m.get(k); if(!o || (h.m||h.t) > (o.m||o.t)) m.set(k, h); }
@@ -763,7 +775,7 @@ function regrade(i, g){
 }
 $('histbtn').onclick = ()=>{ const box = $('hist'); box.hidden = !box.hidden; if(!box.hidden) renderHist(); };
 
-// Hinweis zu einer Karte: landet in der Datenbank (Sammlung "feedback"), Claude liest sie in der naechsten Session
+// Note on a card: goes to the database (collection "feedback"), Claude reads it in the next session
 async function report(c){
   const text = $('rep').value.trim(), out = $('repstate');
   if(!text){ out.textContent = T('report_empty'); return; }
@@ -776,14 +788,14 @@ async function report(c){
   $('repsend').disabled = false;
 }
 
-// Relevanz-Etikett setzen oder (zweiter Klick) wieder entfernen; "" = neutral, damit update() es sicher ueberschreibt
+// Set a relevance label or (second click) remove it again; "" = neutral, so that update() overwrites it safely
 function tag(c, u){
   const S = Object.assign({}, st(c.id));
   S.u = S.u===u ? '' : u; S.t = Date.now();
   state.cards[c.id] = S; saveLocal(); persist(c.id, S); render();
 }
 
-// "Spaeter": ohne Bewertung nach hinten schieben, Fach und Fehlerzaehler bleiben
+// "Spaeter" (later): push to the back without a grade, box and error counter stay
 function later(c){
   const S = Object.assign({}, st(c.id));
   ui.newRun = S.b===0 ? ui.newRun+1 : 0;
@@ -796,7 +808,7 @@ function persist(id, S){
   if(!docRef) return;
   writeChain = writeChain.then(async ()=>{
     try{
-      // Nach einem Ausfall den ganzen Stand hochladen, nicht nur die aktuelle Karte
+      // After an outage, upload the whole state, not just the current card
       if(!docExists || dirty){ await docRef.set({cards: state.cards, v:1}); docExists = true; dirty = false; }
       else if(id) await docRef.update({cards: {[id]: S}});
       $('sync').textContent = T('sync_saved');
@@ -807,7 +819,7 @@ function pushAll(){ if(docRef && dirty) persist(null, null); }
 window.addEventListener('online', pushAll);
 
 function merge(remote){
-  // Pro Karte gewinnt der zuletzt bewertete Stand, egal von welchem Gerät
+  // Per card the most recently graded state wins, regardless of device
   for(const [id,R] of Object.entries(remote||{})){ const L = state.cards[id]; if(!L || (R.t||0) > (L.t||0)) state.cards[id]=R; }
 }
 
@@ -817,8 +829,8 @@ document.addEventListener('click', e=>{
 });
 $('p1only').onclick=()=>{ ui.p1=!ui.p1; saveLocal(); renderChips(); next(); };
 $('weakonly').onclick=()=>{ ui.weak=!ui.weak; renderChips(); next(); };
-// Zuruecksetzen in drei Schritten (Knopf, Weiter, Endgueltig - letzterer 3 s gesperrt), vorher Sicherung
-// des ganzen Lernstands in localStorage und in der Datenbank (fortschritt/sicherung), danach "Rückgängig".
+// Reset in three steps (button, "Weiter", "Endgueltig" (final) - the last one locked for 3 s), with a backup first
+// of the whole learner state in localStorage and in the database (fortschritt/sicherung), then "Rückgängig" (undo).
 let resetStep = 0, resetTimer = null, resetBackup = null;
 function resetRender(){
   const box = $('resetbox'); clearTimeout(resetTimer);
@@ -836,7 +848,7 @@ function resetRender(){
     const tick = ()=>{ n--; if(n>0){ b.textContent = T('reset_final_n', {n}); resetTimer = setTimeout(tick, 1000); } else { b.textContent = T('reset_final'); b.disabled = false; } };
     resetTimer = setTimeout(tick, 1000);
   }
-  // ohne Weiterklicken nach 30 s von selbst wieder zu
+  // closes by itself after 30 s without a further click
   if(resetStep<3) setTimeout(()=>{ if(resetStep===1 || resetStep===2){ resetStep = 0; resetRender(); } }, 30000);
 }
 $('reset').onclick=()=>{ resetStep = 1; resetRender(); };
@@ -862,7 +874,7 @@ $('resetbox').onclick=async e=>{
   }
 };
 
-// Reiter "Plan": Lernschritte zum Abhaken, Haken lokal und in der Datenbank (fortschritt/plan)
+// "Plan" tab: learning steps to tick off, ticks local and in the database (fortschritt/plan)
 const PLAN = JSON.parse(document.getElementById('plan').textContent);
 const LSP = LS + '-plan';
 let planDone = {}; try{ planDone = JSON.parse(localStorage.getItem(LSP)||'{}'); }catch(e){}
@@ -886,6 +898,62 @@ function planAct(a){
 }
 renderPlan();
 
+// Progress file: everything the learner's state consists of, so it can move between browsers or survive
+// a new artifact. Shapes are frozen with the storage protocol: cards {id:{b,r,w,t,k,dn,u}},
+// hist [{id,g,prev,t,m}], plan {itemId:true}. Import merges (newer t wins), it never replaces newer local state.
+const PROGRESS_FORMAT = 1;
+function exportProgress(){
+  return {examkit_progress: PROGRESS_FORMAT, exam_id: CONFIG.id, storage_key: LS,
+          exported_at: new Date().toISOString(), cards: state.cards, hist, plan: planDone};
+}
+function importProgress(data){
+  if(!data || typeof data!=='object' || data.examkit_progress!==PROGRESS_FORMAT || !data.cards || typeof data.cards!=='object') return {ok:false, reason:'import_bad'};
+  if(Array.isArray(data.cards)) return {ok:false, reason:'import_bad'};
+  if(data.storage_key!==LS) return {ok:false, reason:'import_wrong_exam'};
+  // Keep only well-formed entries, so a damaged file cannot reach the shared progress data.
+  const num = v => v===undefined || (typeof v==='number' && Number.isFinite(v));
+  const cards = {};
+  for(const [id,S] of Object.entries(data.cards)) if(S && typeof S==='object' && !Array.isArray(S) && num(S.t) && typeof S.b==='number' && Number.isFinite(S.b) && num(S.dn)) cards[id] = S;
+  const histIn = (Array.isArray(data.hist) ? data.hist : []).filter(h => h && typeof h==='object' && typeof h.id==='string' && typeof h.t==='number');
+  let histChanged = false, planChanged = false;
+  try{
+    merge(cards);
+    histChanged = mergeHist(histIn);
+    for(const [k,v] of Object.entries(data.plan && typeof data.plan==='object' ? data.plan : {})) if(v && !planDone[k]){ planDone[k] = true; planChanged = true; }
+  }catch(e){ return {ok:false, reason:'import_bad'}; }
+  saveLocal(); if(histChanged) saveHist(); if(planChanged) savePlan();
+  dirty = true; pushAll();
+  counts(); renderPlan(); if(!$('hist').hidden) renderHist(); if(!ui.revealed) next();
+  return {ok:true, cards: Object.keys(cards).length};
+}
+async function exportFile(){
+  const data = exportProgress(), text = JSON.stringify(data, null, 1);
+  const name = `${CONFIG.id}-progress-${data.exported_at.slice(0,10)}.json`;
+  // Inside the claude.ai viewer a page may not download by itself; the downloads capability asks the viewer instead.
+  const cl = window.claude;
+  let downloads = null;
+  if(cl && cl.use){ try{ downloads = await cl.use('downloads'); }catch(e){ downloads = null; } }
+  if(downloads){
+    try{ await downloads.save({filename: name, data: text}); $('importstate').textContent = T('export_done'); }
+    catch(e){ $('importstate').textContent = e && e.code==='declined' ? '' : T('export_failed'); }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type:'application/json'})); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  $('importstate').textContent = T('export_done');
+}
+$('export').onclick = exportFile;
+$('import').onclick = ()=> $('importfile').click();
+$('importfile').onchange = async e=>{
+  const f = e.target.files && e.target.files[0]; e.target.value = ''; if(!f) return;
+  let data = null; try{ data = JSON.parse(await f.text()); }catch(err){}
+  const r = importProgress(data);
+  $('importstate').textContent = r.ok ? T('import_done', {n: r.cards}) : r.reason==='import_wrong_exam' ? T('import_wrong_exam') : T('import_bad');
+};
+window.examkitExport = exportProgress;
+window.examkitImport = importProgress;
+
 renderChips(); next();
 
 (async ()=>{
@@ -899,7 +967,7 @@ renderChips(); next();
     const snap = await docRef.get();
     docExists = snap.exists;
     const remote = snap.exists ? ((snap.data()||{}).cards || {}) : {};
-    // Hat dieses Geraet Bewertungen, die noch nicht in der Cloud sind (z.B. offline beantwortet)?
+    // Does this device have grades that are not in the cloud yet (e.g. answered offline)?
     const ahead = Object.entries(state.cards).some(([id,L]) => !remote[id] || (L.t||0) > (remote[id].t||0));
     if(snap.exists){ merge(remote); saveLocal(); counts(); if(!ui.revealed) next(); }
     if(ahead){ dirty = true; pushAll(); }

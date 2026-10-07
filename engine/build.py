@@ -79,6 +79,30 @@ def check_exam(exam):
     return errors
 
 
+def check_retired(exam_dir, cards, previous_manifest):
+    """Card ids are permanent: an id from the previous build that is gone must be listed in retired.json.
+
+    retired.json is {"<card id>": "<reason>"}. Returns a list of error strings.
+    """
+    retired_file = exam_dir / "retired.json"
+    retired = {}
+    if retired_file.exists():
+        try:
+            retired = json.loads(retired_file.read_text(encoding="utf-8"))
+        except ValueError as e:
+            return [f"retired.json: not valid JSON ({e})"]
+        if not isinstance(retired, dict) or not all(isinstance(k, str) and isinstance(r, str) and r for k, r in retired.items()):
+            return ['retired.json: must be an object {"<card id>": "<reason>"} with non-empty reasons']
+    live = {c["id"] for c in cards if isinstance(c.get("id"), str)}
+    errors = [f"retired.json: {rid} is listed as retired but a live card still uses it" for rid in sorted(live & set(retired))]
+    previous = previous_manifest.get("ids") if isinstance(previous_manifest, dict) else None
+    if isinstance(previous, list):
+        missing = sorted(set(previous) - live - set(retired))
+        if missing:
+            errors.append("card ids missing since the previous build (restore them or list them in retired.json): " + ", ".join(missing))
+    return errors
+
+
 def render(template, values):
     """Substitute every placeholder in one pass, so placeholder text inside data stays untouched."""
     for name in PLACEHOLDERS:
@@ -107,8 +131,16 @@ def main():
     plan_file = ex / "plan.json"
     plan = json.loads(plan_file.read_text(encoding="utf-8")) if plan_file.exists() else EMPTY_PLAN
 
-    say(f"2. validate           {len(cards)} cards: fields, decks, priorities, languages, resolvable src")
-    errors = exam_errors + v.validate(cards, exam, coverage, notes_dir, sources_dir)
+    previous_file = ex / "build" / "build.json"
+    previous = {}
+    if previous_file.exists():
+        try:
+            previous = json.loads(previous_file.read_text(encoding="utf-8"))
+        except ValueError:
+            say("   note: previous build.json unreadable, id check skipped")
+
+    say(f"2. validate           {len(cards)} cards: fields, decks, priorities, languages, resolvable src; ids against the previous build and retired.json")
+    errors = exam_errors + v.validate(cards, exam, coverage, notes_dir, sources_dir) + check_retired(ex, cards, previous)
     say(f"3. notes + coverage   render notes from {notes_dir}; count cards and notes per guide item")
     notes, note_errors = notes_mod.load_notes(notes_dir, exam)
     report, cov_errors = cov_mod.compute(coverage, cards, notes_dir)
@@ -139,7 +171,7 @@ def main():
         # notes_head: HEAD of whatever repo contains notes_dir - for a notes dir inside examkit
         # (e.g. example/notes) that would be examkit's own HEAD, so it is reported as None.
         "repo_head": git_head(HERE.parent), "notes_head": notes_head(notes_dir),
-        "cards": len(cards), "by_deck": by_deck, "model_cards": model_cards,
+        "cards": len(cards), "ids": sorted(c["id"] for c in cards), "by_deck": by_deck, "model_cards": model_cards,
         "by_priority": {p: sum(c["p"] == p for c in cards) for p in (1, 2, 3)},
         "coverage": report["summary"],
     }

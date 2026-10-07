@@ -19,11 +19,26 @@ certification prep (AWS), shared in case it is useful.
     python3 -m pip install --user -r requirements.txt   # python-markdown
     python3 engine/build.py example            # builds example/build/index.html
     python3 engine/build.py example --check    # validate only
+    python3 engine/print.py example            # notes as PDF: example/build/print/ (needs headless Chrome)
+    python3 engine/print.py example --html-only
     python3 -m pytest -q
+
+## Demo
+
+The `example/` exam is built by GitHub Actions (`.github/workflows/demo.yml`) and published to this
+repository's GitHub Pages site; the URL is shown under Settings → Pages. Progress there lives only in
+your browser.
+
+## Progress file
+
+"Save progress" writes a JSON file with every grade, the history and the plan ticks; "Load progress"
+merges such a file into the current state (per card the newer grade wins). Card ids are permanent:
+`build.py` refuses a build whose previous `build.json` lists an id that is gone unless `retired.json`
+names it with a reason.
 
 ## Status
 
 Session 1 (2026-10-07): validator, build, template with config placeholders.
 Session 2a (2026-10-07): coverage tab (cards and notes per guide item, red/yellow/green),
 notes tab (Markdown + Mermaid), UI language files `de`/`en`, hardening.
-Planned: print pack, progress export/import, demo on GitHub Pages.
+Session 2b (2026-10-07): progress export/import, retired.json, browser smoke test, print pack, GitHub Pages demo.

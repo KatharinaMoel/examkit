@@ -55,3 +55,19 @@ def test_build_embeds_selected_language(tmp_path):
     m = re.search(r'<script id="ui" type="application/json">(.*?)</script>', html, re.S)
     assert m and json.loads(m.group(1))["tab_cards"] == "Cards"
     assert "<title>Example Exam · Flashcards</title>" in html
+
+
+def test_template_starts_with_doctype_and_has_viewport():
+    t = template()
+    assert t.lower().startswith("<!doctype html>")
+    assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in t
+    assert t.count('<meta charset="utf-8">') == 1
+
+
+GERMAN_WORDS = re.compile(r"\b(und|oder|nicht|wird|werden|damit|wenn|dann|Karte|Karten|Reiter|Verlauf|Geraet|Geraete|zuletzt|nur|solange|Fach|Faecher|Sicherung|Lernstand)\b")
+
+
+def test_no_german_comments_left_in_template():
+    bad = [ln for ln in template().splitlines()
+           if ("//" in ln or ln.strip().startswith("/*")) and GERMAN_WORDS.search(ln)]
+    assert bad == [], bad

@@ -24,33 +24,40 @@ Read this first; it replaces a hand-over. Project rules in short:
 | `engine/coverage.py` | cards (`covers`) and notes (frontmatter `covers`) per guide item; green/yellow/red |
 | `engine/template/index.html` | the flashcard page (tabs Cards, Coverage, Notes, Plan); placeholders `/*TITLE*/ /*CONFIG*/ /*UI*/ /*CARDS*/ /*PLAN*/ /*BUILD*/ /*COVERAGE*/ /*NOTES*/` |
 | `engine/template/ui.de.json`, `ui.en.json` | every UI string; `exam.json.ui_language` picks one; `tests/test_ui.py` enforces that the template uses exactly these keys |
+| `engine/chrome.py` | headless Chrome helper: `find_chrome`, `dump_dom`, `print_pdf` (Flatpak paths via `--filesystem`) |
+| `engine/print.py` | `python3 engine/print.py <exam_dir> [--html-only]` → `build/print/NN-<slug>.html` and `.pdf` per note plus `00-complete.*`; PDF needs headless Chrome |
+| `engine/check_tracked.py` | `git ls-files \| python3 engine/check_tracked.py` fails on tracked exam content, `sources/` (except `example/sources/`) or `build/` |
+| `.github/workflows/demo.yml` | CI: tracked-path check, tests, build of `example/`; deploys it to GitHub Pages from `main` |
 | `requirements.txt` | `markdown>=3.5` — the only dependency beyond the stdlib |
-| `example/` | minimal exam used by the tests and (later) the public demo |
-| `tests/` | `python3 -m pytest -q` — must stay green |
+| `example/` | minimal exam used by the tests and the public demo |
+| `tests/` | `python3 -m pytest -q` — must stay green; `tests/test_smoke.py` drives headless Chrome and is skipped when none is found |
 | `exams/<id>/AGENTS.md` | per-exam hand-over (goal, deadline, state, publish URL) — read it when working on that exam |
 | `docs/superpowers/` | spec and plans (local only, git-ignored); if absent, the README "Status" section is the summary |
 
-## Current state (2026-10-07, end of Session 2a)
+## Current state (2026-10-07, end of Session 2b)
 
 Done: validator, build CLI, config-driven template, example, README (Session 1); coverage tab,
-notes tab (Markdown + Mermaid on demand), UI language files de/en, AIF leftovers removed,
-hardening (`null` config keys → error list, `unsure`/`conflict` strings, card speech language
-from `lang` + `exam.tts`). 70 tests. Install: `python3 -m pip install --user -r requirements.txt`.
+notes tab (Markdown + Mermaid on demand), UI language files de/en, hardening (Session 2a);
+progress export/import (JSON file, newer grade wins per card), `retired.json` for card ids
+(`build.json` lists all `ids`), browser smoke test, print pack (`engine/print.py`), tracked-path check
+and GitHub Actions workflow for the Pages demo (Session 2b). 108 tests. Install:
+`python3 -m pip install --user -r requirements.txt`.
 First exam `exams/aws-clf-c02` is live as a private claude.ai artifact (coverage + notes tabs).
+The workflow uses checkout@v7, setup-python@v7, upload-pages-artifact@v5, deploy-pages@v5 (checked on
+the GitHub release pages on 2026-10-07; keep the last two on matching majors). Enable Pages once with
+source "GitHub Actions". Whether `ubuntu-latest` has Chrome shows in the first run's `-rs` output.
 
 Decisions worth knowing: coverage counts explicit markers only (card `covers`, note frontmatter
 `covers`), never text search; the storage protocol (storage key, localStorage suffixes, DB documents
 `fortschritt/*`, collection `feedback`, grading tokens `richtig|teilweise|falsch`) is frozen because
 a learner's progress hangs on it; the old lookup tab was removed, not generalised (no consumer).
+Chrome's console log printed nothing for page errors in the Flatpak build tested on 2026-10-07, so the
+smoke test uses an in-page error listener (see the docstring in `engine/chrome.py`).
 
-Next (Session 2b, plan B; details in `docs/superpowers/specs/2026-10-07-examkit-design.md` when present):
-1. Print pack (HTML → PDF via headless Chromium, no pandoc), one PDF per note plus a complete one.
-2. Progress export/import button; `retired.json` for card ids (ids missing from the previous
-   `build.json` must be listed there); smoke test in headless Chromium (page loads, DOM card count
-   = JSON, no JS errors).
-3. Demo build of `example/` on GitHub Pages via GitHub Actions (tests, forbidden-path check on
-   `git ls-files`, build, deploy); add `<!doctype html>` and viewport meta for that target.
-4. Small leftovers: German comments in the template; `.notes-nav` group labels stay visible when a
-   search hides all their links; CRLF notes lose their frontmatter silently.
+Next:
+1. AIF-C01 exam migrated into examkit as the second exam (after the CLF exam).
+2. Decide whether to publish the static CLF page (after the exam).
+3. Vault guide "Lernkasten füttern" (German, user view) and the generic agent runbook.
+4. Leftovers: the print pack shows a visible warning when mermaid.js fails to load but does not fail the run (consider a DOM check after printing); the Chrome profile lives in `build/print/.chrome-profile`; the retired-id check compares against the local previous `build/build.json`, not the last commit (vacuous on a fresh clone); relative images in notes do not reach the print pack; `check_tracked.py` and the smoke harness have the small test gaps listed in the Session 2b ledger.
 
 Before starting any of this: run the tests, then `python3 engine/build.py example`.

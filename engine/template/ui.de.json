@@ -48,6 +48,13 @@
   "reset_final": "Endgültig zurücksetzen",
   "reset_final_n": "Endgültig zurücksetzen ({n})",
   "reset_done": "Zurückgesetzt.",
+  "export_btn": "Lernstand sichern",
+  "import_btn": "Lernstand laden",
+  "export_done": "Lernstand-Datei zum Speichern angeboten.",
+  "export_failed": "Die Lernstand-Datei konnte nicht gespeichert werden.",
+  "import_done": "{n} Karten zusammengeführt; je Karte gewann die neuere Bewertung.",
+  "import_bad": "Keine examkit-Lernstand-Datei.",
+  "import_wrong_exam": "Diese Datei gehört zu einer anderen Prüfung.",
   "undo": "Rückgängig machen",
   "close": "Schließen",
   "cancel": "Abbrechen",
@@ -146,5 +153,6 @@
   "cov_p1": " · {n} P1",
   "cov_none": "Nichts gefunden.",
   "notes_search": "Notiz suchen …",
-  "notes_none": "Keine Notizen gebaut."
+  "notes_none": "Keine Notizen gebaut.",
+  "speech_superset": " umfasst "
 }

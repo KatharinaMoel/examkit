@@ -251,3 +251,69 @@ def test_template_reads_card_language_from_config():
 def test_note_jump_strips_inline_markdown():
     t = TEMPLATE.read_text(encoding="utf-8")
     assert "const plain = s =>" in t and "plain(h.textContent)===want" in t
+
+
+def drop_model_card(cs):
+    cs[:] = [c for c in cs if c["id"] != "ex-model"]
+
+
+def manifest(exam_dir):
+    return json.loads((exam_dir / "build" / "build.json").read_text(encoding="utf-8"))
+
+
+def test_manifest_lists_card_ids(tmp_path):
+    ex = copy_example(tmp_path)
+    assert build(ex).returncode == 0
+    assert manifest(ex)["ids"] == ["ex-basic-def", "ex-model", "ex-svc-thing"]
+
+
+def test_missing_id_without_retired_is_error(tmp_path):
+    ex = copy_example(tmp_path)
+    assert build(ex).returncode == 0
+    edit_cards(ex, drop_model_card)
+    r = build(ex)
+    assert r.returncode == 1
+    assert "ex-model" in r.stderr and "retired.json" in r.stderr and "Traceback" not in r.stderr
+    assert manifest(ex)["ids"] == ["ex-basic-def", "ex-model", "ex-svc-thing"]   # old build untouched
+
+
+def test_missing_id_listed_in_retired_passes(tmp_path):
+    ex = copy_example(tmp_path)
+    assert build(ex).returncode == 0
+    edit_cards(ex, drop_model_card)
+    (ex / "retired.json").write_text('{"ex-model": "folded into ex-basic-def on 2026-10-07"}', encoding="utf-8")
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    assert manifest(ex)["ids"] == ["ex-basic-def", "ex-svc-thing"]
+
+
+def test_retired_id_still_live_is_error(tmp_path):
+    ex = copy_example(tmp_path)
+    (ex / "retired.json").write_text('{"ex-basic-def": "typo"}', encoding="utf-8")
+    r = build(ex)
+    assert r.returncode == 1 and "ex-basic-def" in r.stderr and "still" in r.stderr
+    assert outputs(ex) == []
+
+
+def test_retired_bad_shape_is_error(tmp_path):
+    ex = copy_example(tmp_path)
+    (ex / "retired.json").write_text('["ex-model"]', encoding="utf-8")
+    r = build(ex)
+    assert r.returncode == 1 and "retired.json" in r.stderr and "Traceback" not in r.stderr
+
+
+def test_previous_manifest_without_ids_is_tolerated(tmp_path):
+    ex = copy_example(tmp_path)
+    (ex / "build").mkdir()
+    (ex / "build" / "build.json").write_text('{"cards": 3}', encoding="utf-8")
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    assert manifest(ex)["ids"] == ["ex-basic-def", "ex-model", "ex-svc-thing"]
+
+
+def test_check_only_also_checks_retired(tmp_path):
+    ex = copy_example(tmp_path)
+    assert build(ex).returncode == 0
+    edit_cards(ex, drop_model_card)
+    r = build(ex, "--check")
+    assert r.returncode == 1 and "ex-model" in r.stderr
