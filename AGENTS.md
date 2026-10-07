@@ -40,7 +40,8 @@ Done: validator, build CLI, config-driven template, example, README (Session 1);
 notes tab (Markdown + Mermaid on demand), UI language files de/en, hardening (Session 2a);
 progress export/import (JSON file, newer grade wins per card), `retired.json` for card ids
 (`build.json` lists all `ids`), browser smoke test, print pack (`engine/print.py`), tracked-path check
-and GitHub Actions workflow for the Pages demo (Session 2b). 108 tests. Install:
+and GitHub Actions workflow for the Pages demo (Session 2b). 108 tests. Repo `KatharinaMoel/examkit`,
+demo live at <https://katharinamoel.github.io/examkit/> (first workflow run 2026-10-07 passed). Install:
 `python3 -m pip install --user -r requirements.txt`.
 First exam `exams/aws-clf-c02` is live as a private claude.ai artifact (coverage + notes tabs).
 The workflow uses checkout@v7, setup-python@v7, upload-pages-artifact@v5, deploy-pages@v5 (checked on

@@ -25,9 +25,10 @@ certification prep (AWS), shared in case it is useful.
 
 ## Demo
 
+**Try it: <https://katharinamoel.github.io/examkit/>**
+
 The `example/` exam is built by GitHub Actions (`.github/workflows/demo.yml`) and published to this
-repository's GitHub Pages site; the URL is shown under Settings → Pages. Progress there lives only in
-your browser.
+repository's GitHub Pages site on every push to `main`. Progress there lives only in your browser.
 
 ## Progress file
 
