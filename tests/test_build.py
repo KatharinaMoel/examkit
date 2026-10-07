@@ -52,12 +52,11 @@ def test_build_embeds_cards_config_and_manifest(tmp_path):
     r = build(ex)
     assert r.returncode == 0, r.stderr
     html = (ex / "build" / "index.html").read_text(encoding="utf-8")
-    for ph in ("CONFIG", "KARTEN", "PLAN", "LOOKUP", "BUILD"):
+    for ph in ("CONFIG", "CARDS", "PLAN", "BUILD", "COVERAGE", "NOTES", "UI"):
         assert f"/*{ph}*/" not in html
     cards = embedded(html, "cards")
     assert "ex-basic-def" in {c["id"] for c in cards}
     assert embedded(html, "config")["storage_key"] == "examkit-example-v1"
-    assert embedded(html, "lookup") is None
     m = json.loads((ex / "build" / "build.json").read_text())
     assert m["cards"] == 3 and m["model_cards"] == 1 and m["exam_id"] == "example"
     assert embedded(html, "build")["cards"] == 3
@@ -142,3 +141,113 @@ def test_example_build_in_place():
     r = build(EX)
     assert r.returncode == 0, r.stderr
     assert (EX / "build" / "index.html").exists() and (EX / "build" / "build.json").exists()
+
+
+def test_build_embeds_coverage_and_notes(tmp_path):
+    ex = copy_example(tmp_path)
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    html = (ex / "build" / "index.html").read_text(encoding="utf-8")
+    cov = embedded(html, "coverage")
+    assert cov["summary"]["tasks"] == {"total": 1, "green": 1, "yellow": 0, "red": 0}
+    assert cov["domains"][0]["tasks"][0]["notes"] == ["intro"]
+    notes = embedded(html, "notes")
+    assert notes[0]["group"] == "Reading" and notes[0]["items"][0]["slug"] == "intro"
+    assert 'class="mermaid"' in notes[0]["items"][0]["html"]
+    m = json.loads((ex / "build" / "build.json").read_text())
+    assert m["coverage"]["services"]["yellow"] == 1
+    assert "coverage tasks" in r.stderr
+
+
+def test_check_prints_coverage_summary(tmp_path):
+    ex = copy_example(tmp_path)
+    r = build(ex, "--check")
+    assert r.returncode == 0 and "coverage tasks" in r.stderr and outputs(ex) == []
+
+
+def test_note_covers_unknown_id_fails_build(tmp_path):
+    ex = copy_example(tmp_path)
+    (ex / "notes" / "extra.md").write_text("---\ncovers: [9.9]\n---\n# Extra\n", encoding="utf-8")
+    r = build(ex)
+    assert r.returncode == 1 and "extra.md" in r.stderr and "9.9" in r.stderr
+    assert outputs(ex) == []
+
+
+def test_missing_note_in_config_fails_build(tmp_path):
+    ex = copy_example(tmp_path)
+    edit_exam(ex, lambda e: e["notes"][0]["items"].append({"slug": "ghost"}))
+    r = build(ex)
+    assert r.returncode == 1 and "ghost.md" in r.stderr and outputs(ex) == []
+
+
+def test_hostile_note_round_trips(tmp_path):
+    ex = copy_example(tmp_path)
+    nasty = "Close </script> open <!-- and `/*CARDS*/` end"
+    f = ex / "notes" / "intro.md"
+    f.write_text(f.read_text(encoding="utf-8") + f"\n\n## Nasty\n\n{nasty}\n", encoding="utf-8")
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    html = (ex / "build" / "index.html").read_text(encoding="utf-8")
+    assert "<!--" not in html and html.count("</script>") == html.count("<script")
+    assert "/*CARDS*/" in embedded(html, "notes")[0]["items"][0]["html"]
+
+
+def test_template_has_four_tabs_and_no_lookup():
+    t = TEMPLATE.read_text(encoding="utf-8")
+    for tab in ("cards", "coverage", "notes", "plan"):
+        assert f'id="tab-{tab}"' in t and f'id="view-{tab}"' in t
+    for gone in ("/*LOOKUP*/", 'id="lookup"', "aifShow", "servicesIn", "tab-dienste", "view-karten"):
+        assert gone not in t
+    assert "examkitShow" in t
+
+
+def test_template_links_cards_to_notes():
+    t = TEMPLATE.read_text(encoding="utf-8")
+    assert "examkitNote" in t and "cdn.jsdelivr.net/npm/mermaid@11" in t
+    for gone in ("NOTIZ", "kompassLink", "KOMPASS", "compass_url", "Lernkompass"):
+        assert gone not in t
+
+
+def test_ui_language_switches_strings(tmp_path):
+    ex = copy_example(tmp_path)
+    edit_exam(ex, lambda e: e.update(ui_language="de"))
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    html = (ex / "build" / "index.html").read_text(encoding="utf-8")
+    assert embedded(html, "ui")["tab_cards"] == "Karten" and "· Karteikasten</title>" in html
+
+
+def test_unknown_ui_language_is_error(tmp_path):
+    ex = copy_example(tmp_path)
+    edit_exam(ex, lambda e: e.update(ui_language="fr"))
+    r = build(ex, "--check")
+    assert r.returncode == 1 and "exam.ui_language" in r.stderr and "fr" in r.stderr
+    assert "Traceback" not in r.stderr
+
+
+def test_null_exam_keys_give_error_list(tmp_path):
+    ex = copy_example(tmp_path)
+    edit_exam(ex, lambda e: e.update({k: None for k in list(e)}))
+    r = build(ex, "--check")
+    assert r.returncode == 1 and "Traceback" not in r.stderr
+    for key in ("id", "title", "storage_key", "grading_prompt", "notes_dir", "ui_language", "decks", "languages"):
+        assert f"exam.{key}" in r.stderr, key
+
+
+def test_tts_must_be_object_of_strings(tmp_path):
+    ex = copy_example(tmp_path)
+    edit_exam(ex, lambda e: e.update(tts="de-DE"))
+    r = build(ex, "--check")
+    assert r.returncode == 1 and "exam.tts" in r.stderr
+
+
+def test_template_reads_card_language_from_config():
+    t = TEMPLATE.read_text(encoding="utf-8")
+    assert "CONFIG.tts" in t and "cardLang(" in t
+    for gone in ("'pruefung'", "Correct: ", "c.erst", "langOf("):
+        assert gone not in t
+
+
+def test_note_jump_strips_inline_markdown():
+    t = TEMPLATE.read_text(encoding="utf-8")
+    assert "const plain = s =>" in t and "plain(h.textContent)===want" in t

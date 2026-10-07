@@ -8,6 +8,7 @@
   "decks": {"signals": "Signals", "terms": "Terms"},
   "priorities": {"1": "Core", "2": "Depth", "3": "Background"},
   "notes_dir": "notes",
+  "notes": [{"group": "Reading", "items": [{"slug": "intro", "title": "Intro", "subtitle": "The only note"}]}],
   "artifact_url": null,
   "storage_key": "examkit-example-v1",
   "grading_prompt": "You grade an answer to a flashcard for the exam {exam_code} ({title})."

@@ -117,3 +117,16 @@ def test_p_bool_and_float_rejected():
 def test_messages_include_file():
     msgs = _with(p=4)
     assert any("ex-basic-def (basics.json)" in m for m in msgs)
+
+
+def test_unsure_and_conflict_must_be_strings():
+    assert any("unsure must be a non-empty string" in m for m in _with(unsure=5))
+    assert any("conflict must be a non-empty string" in m for m in _with(conflict=["a"]))
+    assert any("unsure must be a non-empty string" in m for m in _with(unsure="  "))
+    assert not any("unsure" in m for m in _with(unsure="Checked against the 2026 guide only"))
+
+
+def test_null_languages_and_decks_do_not_crash():
+    _, _, cards = load()
+    msgs = run(cards, exam={"decks": None, "languages": None})
+    assert any("deck" in m for m in msgs)

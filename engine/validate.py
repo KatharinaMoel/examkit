@@ -78,8 +78,8 @@ def validate(cards, exam, coverage, notes_dir, sources_dir) -> list[str]:
     if not cards:
         return ["no cards found"]
     cov_ids = coverage_ids(coverage)
-    decks = set(exam.get("decks", {}))
-    langs = set(exam.get("languages", []))
+    decks = set(exam.get("decks") or {})
+    langs = set(exam.get("languages") or [])
     seen = {}
     for n, c in enumerate(cards, 1):
         if not isinstance(c, dict):
@@ -113,6 +113,9 @@ def validate(cards, exam, coverage, notes_dir, sources_dir) -> list[str]:
             errors.append(f"{label}: lang '{c['lang']}' not in exam.languages {sorted(langs)}")
         if "key" in c and c["key"] not in ("", None, []) and not _is_str_list(c["key"]):
             errors.append(f"{label}: key must be a list of strings")
+        for f in ("unsure", "conflict"):
+            if f in c and (not isinstance(c[f], str) or not c[f].strip()):
+                errors.append(f"{label}: {f} must be a non-empty string")
         if "covers" in c:
             if not _is_str_list(c["covers"]):
                 errors.append(f"{label}: covers must be a list of ids")

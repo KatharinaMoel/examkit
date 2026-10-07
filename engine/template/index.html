@@ -29,6 +29,7 @@
   --rule:#232A35;
 }
 html,body{height:100%}
+[hidden]{display:none!important}
 body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.45;padding-inline:16px;padding-block:12px 28px}
 .wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 header{display:flex;flex-direction:column;gap:10px}
@@ -70,8 +71,7 @@ textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outl
 .solution .lbl{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .solution .a{font-size:18px}
 .solution .ctx{border-top:1px solid var(--rule);padding-top:8px;display:flex;flex-direction:column;gap:3px;font-size:15.5px;line-height:1.5}
-.solution .more{font-size:14.5px;color:var(--accent);align-self:flex-start}
-.svcmini{font-size:15px;line-height:1.5}.svcmini+.svcmini{margin-top:6px}.svcnot{display:block;font-size:13.5px;color:var(--muted)}
+.solution .more{font:inherit;font-size:14.5px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;align-self:flex-start}
 .tagrow{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--muted)}.tag{font:inherit;font-size:13.5px;background:none;border:1px dashed var(--line);border-radius:999px;padding:3px 10px;color:var(--muted);cursor:pointer}.tag[aria-pressed="true"]{border-style:solid;border-color:var(--accent);color:var(--accent);font-weight:700}
 .hitem{display:flex;flex-direction:column;gap:4px;padding:8px 0;border-top:1px solid var(--rule)}.hq{font-size:14px;color:var(--ink)}#hist{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px 12px}
 .report{font-size:14px;color:var(--muted)}.report summary{cursor:pointer;padding:6px 0}.report textarea{min-height:64px;font-size:16px;margin:6px 0}.repstate{font-size:13.5px}
@@ -97,35 +97,46 @@ footer.build{max-width:560px;margin:14px auto 0;font-family:var(--mono);font-siz
 .resetbox button[disabled]{opacity:.5;cursor:default;text-decoration:none}
 .foot button{font:inherit;font-size:13px;background:none;border:none;color:var(--accent);padding:0;cursor:pointer;text-decoration:underline;align-self:flex-start}
 /* Reiter */
-.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background:var(--line);padding:3px;border-radius:10px}
-.tab{font:inherit;font-size:15px;font-weight:700;border:none;border-radius:8px;padding:8px;background:transparent;color:var(--muted);cursor:pointer;min-height:40px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--line);padding:3px;border-radius:10px}
+.tab{font:inherit;font-size:14px;font-weight:700;border:none;border-radius:8px;padding:8px 4px;background:transparent;color:var(--muted);cursor:pointer;min-height:40px}
 .tab[aria-selected="true"]{background:var(--card);color:var(--ink)}
-/* Dienste-Uebersicht */
+/* Abdeckung und Notizen */
 .search{font:inherit;font-size:16px;width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);padding:10px 12px}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .panel h2,.grp{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0}
 .grp{margin-top:6px}
 .panel ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
-.chain{display:flex;flex-direction:column;gap:1px;padding-block:6px;border-top:1px solid var(--rule)}
-.chain:first-of-type{border-top:none}
-.chain span{font-size:14px;color:var(--muted)}
-.chain b{font-size:16px}
-.svc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:5px}
-.svc h3{margin:0;font-size:17px}
-.svc .sig{font-family:var(--mono);font-size:12px;color:var(--accent)}
-.svc dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:15px}
-.svc dt{color:var(--muted);font-size:13px;padding-top:2px}
-.svc dd{margin:0}
-.svc dd.no{color:var(--bad)}
-.svc .src{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.mx{display:flex;flex-direction:column;gap:4px;padding-block:8px;border-top:1px solid var(--rule)}
-.mx:first-of-type{border-top:none}
-.mxq{font-weight:700;font-size:15.5px}.mxq small{font-weight:400;color:var(--muted)}
-.mxr{display:grid;grid-template-columns:6.5em 5.5em 1fr;gap:6px;align-items:baseline;font-size:14.5px}
-.mxn{color:var(--muted);font-size:13px}
-.yn{font-size:12.5px;border-radius:999px;padding:1px 8px;text-align:center;font-weight:700}
-.yn-ja{background:var(--ok-soft);color:var(--ok)}.yn-nein{background:var(--bad-soft);color:var(--bad)}.yn-teils{background:var(--mid-soft);color:var(--mid)}
 .none{color:var(--muted);font-size:15px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline;background:var(--line);flex:none}
+.dot.green{background:var(--ok)}.dot.yellow{background:var(--mid)}.dot.red{background:var(--bad)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+.cov-sum{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:15px}
+.cov-sum b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums}
+details.cov{border-top:1px solid var(--rule);padding:6px 0}
+details.cov summary{cursor:pointer;display:flex;gap:6px;align-items:baseline;font-size:15px;list-style:none}
+details.cov summary::-webkit-details-marker{display:none}
+details.cov summary b{font-family:var(--mono);font-weight:500;font-size:13px;color:var(--muted);flex:none}
+details.cov summary .covn{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted);flex:none;white-space:nowrap}
+details.cov ul{margin:4px 0 0;padding-left:20px;font-size:14px;color:var(--muted)}
+details.cov .covnotes{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+details.cov .covnotes button{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--card);color:var(--accent);cursor:pointer}
+#coverage-out{display:flex;flex-direction:column;gap:14px}
+.notes-nav{display:flex;flex-direction:column;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.navgrp{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:6px 0 2px}
+.navlink{display:flex;flex-direction:column;padding:6px 8px;border-radius:7px;text-decoration:none;color:var(--ink)}
+.navlink:hover{background:var(--accent-soft)}.navlink.off{display:none}
+.navtitle{font-size:15px;font-weight:700}.navsub{font-size:12.5px;color:var(--muted)}
+.note{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:14px;font-size:15.5px;line-height:1.55;overflow-wrap:anywhere}
+.note .notehead h1{font-size:19px;margin:0}.note .notesub{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+.notebody h1{font-size:17px;margin:16px 0 6px}.notebody h2{font-size:16px;margin:14px 0 4px;color:var(--accent)}.notebody h3{font-size:15px;margin:10px 0 2px}
+.notebody p{margin:0 0 8px}.notebody ul,.notebody ol{margin:0 0 8px;padding-left:22px}
+.notebody table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 10px;display:block;overflow-x:auto}
+.notebody th,.notebody td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top}
+.notebody th{background:var(--ground)}
+.notebody blockquote{margin:0 0 8px;padding:4px 10px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:4px}
+.notebody code{font-family:var(--mono);font-size:13px}.notebody pre:not(.mermaid){background:var(--ground);padding:8px;overflow-x:auto;border-radius:6px;font-size:13px}
+.notebody pre.mermaid{background:none;text-align:center;overflow-x:auto}.notebody pre.mermaid svg{max-width:100%;height:auto}
+.notebody a{color:var(--accent)}
 .pday{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
 .pday h2{font-size:16px;margin:0}.pday .ph{font-size:13px;color:var(--muted);margin-bottom:4px}
 .pitem{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;padding:8px 0;border-top:1px solid var(--rule)}
@@ -140,19 +151,29 @@ footer.build{max-width:560px;margin:14px auto 0;font-family:var(--mono);font-siz
 
 <div class="wrap">
   <div class="top">
-    <h1>Karteikasten</h1>
-    <span class="sync" id="sync">Lernstand: wird geladen</span>
+    <h1></h1>
+    <span class="sync" id="sync" data-ui="sync_loading"></span>
   </div>
   <div class="tabs" role="tablist">
-    <button class="tab" role="tab" id="tab-karten" aria-selected="true">Karten</button>
-    <button class="tab" role="tab" id="tab-dienste" aria-selected="false">Dienste</button>
-    <button class="tab" role="tab" id="tab-plan" aria-selected="false">Plan</button>
+    <button class="tab" role="tab" id="tab-cards" aria-selected="true" data-ui="tab_cards"></button>
+    <button class="tab" role="tab" id="tab-coverage" aria-selected="false" data-ui="tab_coverage"></button>
+    <button class="tab" role="tab" id="tab-notes" aria-selected="false" data-ui="tab_notes"></button>
+    <button class="tab" role="tab" id="tab-plan" aria-selected="false" data-ui="tab_plan"></button>
   </div>
 
-  <section id="view-dienste" hidden>
+  <section id="view-coverage" hidden>
     <div class="wrap">
-      <input class="search" id="q" type="search" placeholder="Dienst, Aufgabe oder Signalwort suchen …" autocomplete="off">
-      <div id="dienste-out"></div>
+      <input class="search" id="cov-q" type="search" data-ui-placeholder="cov_search" autocomplete="off">
+      <div class="chips" role="group" data-ui-label="aria_filter"><button class="chip" id="cov-gaps" type="button" aria-pressed="false" data-ui="cov_gaps"></button></div>
+      <div id="coverage-out"></div>
+    </div>
+  </section>
+
+  <section id="view-notes" hidden>
+    <div class="wrap">
+      <input class="search" id="notes-q" type="search" data-ui-placeholder="notes_search" autocomplete="off">
+      <nav class="notes-nav" id="notes-nav"></nav>
+      <div id="notes-out"></div>
     </div>
   </section>
 
@@ -160,26 +181,26 @@ footer.build{max-width:560px;margin:14px auto 0;font-family:var(--mono);font-siz
     <div class="wrap" id="plan-out"></div>
   </section>
 
-  <section id="view-karten">
+  <section id="view-cards">
   <div class="wrap">
   <header>
-    <div class="boxes" aria-label="Fortschritt">
-      <button type="button" class="box" data-fach="0" aria-pressed="false"><b id="n0">0</b><span>neu</span></button>
-      <button type="button" class="box" data-fach="1" aria-pressed="false"><b id="n1">0</b><span>wackelt</span></button>
-      <button type="button" class="box" data-fach="2" aria-pressed="false"><b id="n2">0</b><span>fast</span></button>
-      <button type="button" class="box done" data-fach="3" aria-pressed="false"><b id="n3">0</b><span>sitzt</span></button>
+    <div class="boxes" data-ui-label="aria_boxes">
+      <button type="button" class="box" data-fach="0" aria-pressed="false"><b id="n0">0</b><span data-ui="box_0"></span></button>
+      <button type="button" class="box" data-fach="1" aria-pressed="false"><b id="n1">0</b><span data-ui="box_1"></span></button>
+      <button type="button" class="box" data-fach="2" aria-pressed="false"><b id="n2">0</b><span data-ui="box_2"></span></button>
+      <button type="button" class="box done" data-fach="3" aria-pressed="false"><b id="n3">0</b><span data-ui="box_3"></span></button>
     </div>
     <div class="fachinfo" id="fachinfo" hidden></div>
-    <div class="chips" id="chips" role="group" aria-label="Stapel"></div>
-    <div class="chips" role="group" aria-label="Filter">
-      <button class="chip" id="p1only" aria-pressed="false">Nur Priorität 1</button>
-      <button class="chip" id="weakonly" aria-pressed="false">Nur Fehler</button>
+    <div class="chips" id="chips" role="group" data-ui-label="aria_decks"></div>
+    <div class="chips" role="group" data-ui-label="aria_filter">
+      <button class="chip" id="p1only" aria-pressed="false" data-ui="filter_p1"></button>
+      <button class="chip" id="weakonly" aria-pressed="false" data-ui="filter_weak"></button>
     </div>
-    <div class="chips" role="group" aria-label="Hörmodus">
-      <button class="chip" id="hoerbtn" type="button" aria-pressed="false">Hörmodus</button>
-      <button class="chip" id="hoerhalt" type="button" hidden>Pause</button>
-      <button class="chip" id="hoervoice" type="button" aria-pressed="false">Antwort per Sprache</button>
-      <button class="chip" id="hoerpause" type="button">Denkpause 10 s</button>
+    <div class="chips" role="group" data-ui-label="listen">
+      <button class="chip" id="hoerbtn" type="button" aria-pressed="false" data-ui="listen"></button>
+      <button class="chip" id="hoerhalt" type="button" hidden data-ui="pause"></button>
+      <button class="chip" id="hoervoice" type="button" aria-pressed="false" data-ui="listen_voice"></button>
+      <button class="chip" id="hoerpause" type="button" data-ui="think_pause"></button>
     </div>
     <div class="hoerstate" id="hoerstate" aria-live="polite"></div>
   </header>
@@ -187,114 +208,166 @@ footer.build{max-width:560px;margin:14px auto 0;font-family:var(--mono);font-siz
   <main id="stage"></main>
 
   <div class="foot">
-    <span>Wiederholung nach Kartenzahl: „Falsch“ kommt nach etwa 20 Karten wieder, „Teilweise“ nach 50, „fast“ nach 100, „sitzt“ nach 250. Neue Karte gleich gewusst: direkt „fast“. Solange es neue Karten gibt, kommen je zwei neue, dann eine Wiederholung. „Später“ schiebt eine Karte um 30 Karten nach hinten.</span>
-    <span>Fach antippen (neu, wackelt, fast, sitzt): alle Karten dieses Fachs einmal der Reihe nach durchgehen, wichtigste zuerst. Nochmal antippen beendet.</span>
-    <span>Antwort diktieren: ins Feld tippen, dann das Mikrofon der iPhone-Tastatur. „Prüfen lassen“ bewertet nur gegen die Musterlösung aus deinen Notizen.</span>
-    <span>Hörmodus: liest die Frage vor, wartet die Denkpause (bei Prüfungsfragen doppelt), liest die Antwort vor. Mit „Antwort per Sprache“ kommt danach ein Piepton: „ja“, „teils“ oder „nein“ sagen - außerdem „nochmal“, „später“, „stopp“. Bei tiefem Doppelton nicht verstanden: tippen. „Pause“ hält sofort an, „Weiter“ setzt bei dieser Karte wieder an. Bildschirm bitte anlassen.</span>
+    <span data-ui="foot_repeat"></span>
+    <span data-ui="foot_box"></span>
+    <span data-ui="foot_dictate"></span>
+    <span data-ui="foot_listen"></span>
     <span id="aistate"></span>
-    <button id="histbtn" type="button">Verlauf: letzte Bewertungen ansehen und korrigieren</button>
+    <button id="histbtn" type="button" data-ui="hist_btn"></button>
     <div id="hist" hidden></div>
-    <button id="reset" type="button">Lernstand dieses Stapels zurücksetzen</button>
+    <button id="reset" type="button" data-ui="reset_btn"></button>
     <div id="resetbox" class="resetbox" hidden></div>
   </div>
   </div>
   </section>
 </div>
-<footer class="build">Build <span id="build-stamp"></span></footer>
+<footer class="build"><span id="build-stamp"></span></footer>
 
-<script id="cards" type="application/json">/*KARTEN*/</script>
+<script id="cards" type="application/json">/*CARDS*/</script>
 <script id="config" type="application/json">/*CONFIG*/</script>
+<script id="ui" type="application/json">/*UI*/</script>
 <script id="build" type="application/json">/*BUILD*/</script>
-<script id="lookup" type="application/json">/*LOOKUP*/</script>
 <script id="plan" type="application/json">/*PLAN*/</script>
+<script id="coverage" type="application/json">/*COVERAGE*/</script>
+<script id="notes" type="application/json">/*NOTES*/</script>
 <script>
-// Exam config, build manifest and optional lookup data (Dienste tab); null lookup hides that tab
+// Exam config, UI strings and build manifest. T(key, vars) fills {name} placeholders; unknown key -> the key itself.
 const CONFIG = JSON.parse(document.getElementById('config').textContent);
+const UI = JSON.parse(document.getElementById('ui').textContent);
 const BUILD = JSON.parse(document.getElementById('build').textContent);
-const LOOKUP = JSON.parse(document.getElementById('lookup').textContent);
-document.title = CONFIG.title + ' · Karteikasten';
+const T = (k, vars) => String(UI[k] ?? k).replace(/\{(\w+)\}/g, (m, n) => vars && n in vars ? String(vars[n]) : m);
+document.title = CONFIG.title + ' · ' + T('title_suffix');
 document.querySelector('h1').textContent = CONFIG.title;
-document.getElementById('build-stamp').textContent = BUILD.built_at + ' · ' + BUILD.cards + ' Karten · ' + BUILD.model_cards + ' Modellwissen';
+for(const el of document.querySelectorAll('[data-ui]')) el.textContent = T(el.dataset.ui);
+for(const el of document.querySelectorAll('[data-ui-placeholder]')) el.placeholder = T(el.dataset.uiPlaceholder);
+for(const el of document.querySelectorAll('[data-ui-label]')) el.setAttribute('aria-label', T(el.dataset.uiLabel));
+document.getElementById('build-stamp').textContent = T('build_stamp', {t: BUILD.built_at, cards: BUILD.cards, model: BUILD.model_cards});
 </script>
 <script>
 (function(){
-const D = LOOKUP;
+// Reiter: Karten, Abdeckung, Notizen, Plan. Gemerkt wird der zuletzt offene Reiter (localStorage).
+const COV = JSON.parse(document.getElementById('coverage').textContent);
+const VIEWS = ['cards','coverage','notes','plan'];
 const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const out = document.getElementById('dienste-out'), q = document.getElementById('q');
-function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
-function render(){
-  if(!D) return;
-  const term = norm(q.value.trim());
-  const hit = x => !term || norm([x.d,x.wofuer,x.nicht,x.mit,x.signal,x.g].join(' ')).includes(term);
-  const chains = D.ketten.filter(k => !term || norm(k.aufgabe+' '+k.kette).includes(term));
-  let html = '';
-  if(!term) html += `<div class="panel"><h2>Die Rangfolge, die fast jede Dienstfrage entscheidet</h2><ol>${D.rangfolge.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>`;
-  const vg = (D.vergleiche||[]).filter(v => !term || norm(v.titel+' '+v.zeilen.map(z=>z.a+' '+z.b).join(' ')).includes(term));
-  if(vg.length) html += vg.map(v=>`<div class="panel"><h2>${esc(v.titel)}</h2>${v.zeilen.map(z=>`<div class="chain"><b>${esc(z.a)}</b><span>${esc(z.b)}</span></div>`).join('')}<span class="src">Quelle: ${esc(v.src)}</span></div>`).join('');
-  const mx = (D.matrix||[]).filter(z => !term || norm(z.frage+' '+z.br.t+' '+z.sm.t).includes(term));
-  const pill = v => `<b class="yn yn-${v==='Ja'?'ja':v==='Nein'?'nein':'teils'}">${esc(v)}</b>`;
-  if(mx.length) html += `<div class="panel"><h2>Bedrock oder SageMaker AI?</h2>${mx.map(z=>`<div class="mx"><span class="mxq">${esc(z.frage)}${z.herkunft==='modell'?' <small>· Modellwissen</small>':''}</span><div class="mxr"><span class="mxn">Bedrock</span>${pill(z.br.v)}<span>${esc(z.br.t)}</span></div><div class="mxr"><span class="mxn">SageMaker AI</span>${pill(z.sm.v)}<span>${esc(z.sm.t)}</span></div></div>`).join('')}</div>`;
-  const pr = (D.preise||[]).filter(z => term ? norm(z.d+' '+z.f+' '+z.e+' '+z.m.join(' ')).includes(term) : false);
-  if(pr.length) html += `<div class="panel"><h2>Abrechnung (Preisseiten, 25.09.2026)</h2>${pr.map(z=>`<div class="chain"><span>${esc(z.d)}${z.f?' · '+esc(z.f):''}</span><b>${esc(z.e)}</b><span>${esc(z.m.join(' · '))}</span></div>`).join('')}</div>`;
-  if(!term) html += `<div class="panel"><h2>Abrechnung</h2><span class="none">Tippe oben einen Dienst ein (z.B. Transcribe, Bedrock, SageMaker), dann steht hier, wie er abrechnet - Einheit und Modelle, belegt von der AWS-Preisseite, ohne Preise.</span></div>`;
-  if(!term && D.betrieb) html += `<div class="panel"><h2>Managed oder self-managed: wie viel betreibst du selbst?</h2>${D.betrieb.map(b=>`<div class="chain"><span>${esc(b.stufe)} · ${esc(b.was)}</span><b>${esc(b.bsp)}</b></div>`).join('')}<span class="chain"><span>Prüfungsregel: die Lösung mit der wenigsten übrigen Arbeit, die die Aufgabe noch löst. Quelle: 10 §1</span></span></div>`;
-  if(chains.length) html += `<div class="panel"><h2>Dienste im Zusammenspiel</h2>${chains.map(k=>`<div class="chain"><span>${esc(k.aufgabe)}</span><b>${esc(k.kette)}</b></div>`).join('')}</div>`;
-  let grp = null, n = 0;
-  for(const x of D.dienste.filter(hit)){
-    if(x.g!==grp){ grp=x.g; html += `<h2 class="grp">${esc(grp)}</h2>`; }
-    n++;
-    html += `<article class="svc"><h3>${esc(x.d)}</h3>${x.signal?`<span class="sig">„${esc(x.signal)}“</span>`:''}
-      <dl><dt>Wofür</dt><dd>${esc(x.wofuer)}</dd>
-      ${x.nicht&&x.nicht!=='-'?`<dt>Nicht</dt><dd class="no">${esc(x.nicht)}</dd>`:''}
-      ${x.mit&&x.mit!=='-'?`<dt>Mit</dt><dd>${esc(x.mit)}</dd>`:''}</dl>
-      <span class="src">Quelle: ${esc(x.src)}</span></article>`;
-  }
-  if(!n && !chains.length) html += `<p class="none">Nichts gefunden für „${esc(q.value)}“.</p>`;
-  out.innerHTML = `<div class="wrap">${html}</div>`;
-}
-q.addEventListener('input', render);
-if(!LOOKUP){
-  document.getElementById('tab-dienste').hidden = true;
-  document.querySelector('.tabs').style.gridTemplateColumns = '1fr 1fr';
-}
+const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 function show(which){
-  if(which==='dienste' && !LOOKUP) which = 'karten';
-  for(const v of ['karten','dienste','plan']){
+  if(!VIEWS.includes(which)) which = 'cards';
+  for(const v of VIEWS){
     document.getElementById('view-'+v).hidden = v!==which;
     document.getElementById('tab-'+v).setAttribute('aria-selected', v===which);
   }
   try{ localStorage.setItem(CONFIG.storage_key + '-tab', which); }catch(e){}
+  document.dispatchEvent(new CustomEvent('examkit:show', {detail: which}));
 }
-window.aifShow = show;
-document.getElementById('tab-karten').onclick = ()=>show('karten');
-document.getElementById('tab-dienste').onclick = ()=>show('dienste');
-document.getElementById('tab-plan').onclick = ()=>show('plan');
-if(LOOKUP) render();
-let start = location.hash==='#dienste' && LOOKUP ? 'dienste' : null;
-if(!start){ try{ start = localStorage.getItem(CONFIG.storage_key + '-tab'); }catch(e){} }
-if((start==='dienste' && LOOKUP) || start==='plan') show(start);
+window.examkitShow = show;
+for(const v of VIEWS) document.getElementById('tab-'+v).onclick = ()=>show(v);
+
+// Abdeckung: je Lernziel, Dienst und Konzept die Zahl der Karten (covers) und Notizen (Frontmatter covers)
+const out = document.getElementById('coverage-out'), q = document.getElementById('cov-q'), gaps = document.getElementById('cov-gaps');
+const dot = s => `<i class="dot ${s}" aria-label="${esc(T(`cov_legend_${s}`))}"></i>`;
+const sum = k => { const s = COV.summary[k]; return T('cov_sum', {green: s.green, yellow: s.yellow, red: s.red, total: s.total}); };
+function row(t){
+  const notes = (t.notes||[]).map(n=>`<button type="button" data-note="${esc(n)}">${esc(n)}</button>`).join('');
+  const skills = (t.skills||[]).length ? `<ul>${t.skills.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>` : '';
+  return `<details class="cov ${t.status}"><summary>${dot(t.status)}<b>${esc(String(t.id).replace(/^(svc|concept):/,''))}</b><span>${esc(t.title||t.name||'')}</span><span class="covn">${T('cov_counts', {cards: t.cards, p1: t.p1 ? T('cov_p1', {n: t.p1}) : '', notes: (t.notes||[]).length})}</span></summary>${skills}${notes?`<div class="covnotes">${notes}</div>`:''}</details>`;
+}
+function hit(t){
+  if(gaps.getAttribute('aria-pressed')==='true' && t.status==='green') return false;
+  const term = norm(q.value.trim());
+  return !term || norm([t.id, t.title, t.name, t.category, ...(t.skills||[]), ...(t.knowledge||[])].filter(Boolean).join(' ')).includes(term);
+}
+function group(title, rows, byKey){
+  const R = rows.filter(hit); if(!R.length) return '';
+  let html = `<div class="panel"><h2>${esc(title)} · ${R.length}</h2>`, cur = null;
+  for(const r of R){
+    const g = byKey ? (r[byKey]||'') : '';
+    if(g && g!==cur){ html += `<h2 class="grp">${esc(g)}</h2>`; cur = g; }
+    html += row(r);
+  }
+  return html + '</div>';
+}
+function render(){
+  let html = `<div class="panel"><h2>${T('cov_title')}</h2><div class="legend"><span>${dot('green')}${T('cov_legend_green')}</span><span>${dot('yellow')}${T('cov_legend_yellow')}</span><span>${dot('red')}${T('cov_legend_red')}</span></div>
+    <div class="cov-sum"><span>${T('cov_tasks')}</span><b>${sum('tasks')}</b><span>${T('cov_services')}</span><b>${sum('services')}</b><span>${T('cov_concepts')}</span><b>${sum('concepts')}</b></div></div>`;
+  for(const d of COV.domains){
+    const R = d.tasks.filter(hit); if(!R.length) continue;
+    html += `<div class="panel"><h2>${T('cov_domain', {id: esc(d.id), title: esc(d.title||'')})}${d.weight!=null ? T('cov_weight', {w: esc(d.weight)}) : ''}</h2>${R.map(row).join('')}</div>`;
+  }
+  html += group(T('cov_services'), COV.services, 'category') + group(T('cov_concepts'), COV.concepts, null);
+  if(!html.includes('<details')) html += `<p class="none">${T('cov_none')}</p>`;
+  out.innerHTML = html;
+}
+q.addEventListener('input', render);
+gaps.onclick = ()=>{ gaps.setAttribute('aria-pressed', String(gaps.getAttribute('aria-pressed')!=='true')); render(); };
+out.addEventListener('click', e=>{ const b = e.target.closest('[data-note]'); if(b && window.examkitNote) window.examkitNote(b.dataset.note, null); });
+render();
+let start = null;
+try{ start = localStorage.getItem(CONFIG.storage_key + '-tab'); }catch(e){}
+if(start && start!=='cards') show(start);
+})();
+</script>
+<script>
+(function(){
+// Notes: HTML rendered at build time (own vault notes, so inserted as is); Mermaid is drawn by the browser,
+// its script is loaded only when the tab is first opened and there are diagrams.
+const NOTES = JSON.parse(document.getElementById('notes').textContent);
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nav = document.getElementById('notes-nav'), out = document.getElementById('notes-out'), q = document.getElementById('notes-q');
+const ITEMS = NOTES.flatMap(g => g.items);
+if(!ITEMS.length){ out.innerHTML = `<p class="none">${T('notes_none')}</p>`; nav.hidden = true; }
+else {
+  nav.innerHTML = NOTES.map(g => (g.group ? `<div class="navgrp">${esc(g.group)}</div>` : '') + g.items.map(i =>
+    `<a class="navlink" href="#note-${esc(i.slug)}" data-slug="${esc(i.slug)}"><span class="navtitle">${esc(i.title)}</span>${i.subtitle?`<span class="navsub">${esc(i.subtitle)}</span>`:''}</a>`).join('')).join('');
+  out.innerHTML = ITEMS.map(i => `<section class="note" id="note-${esc(i.slug)}"><header class="notehead"><h1>${esc(i.title)}</h1>${i.subtitle?`<p class="notesub">${esc(i.subtitle)}</p>`:''}</header><div class="notebody">${i.html}</div></section>`).join('');
+}
+function filter(){
+  const term = q.value.trim().toLowerCase();
+  for(const sec of out.querySelectorAll('section.note')){
+    const on = !term || sec.textContent.toLowerCase().includes(term);
+    sec.hidden = !on;
+    const a = nav.querySelector(`[data-slug="${CSS.escape(sec.id.slice(5))}"]`); if(a) a.classList.toggle('off', !on);
+  }
+}
+q.addEventListener('input', filter);
+let mermaidState = 0; // 0 not loaded, 1 loading, 2 drawn
+function drawMermaid(){
+  if(mermaidState || !out.querySelector('pre.mermaid')) return;
+  mermaidState = 1;
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
+  s.onload = ()=>{
+    const theme = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    try{
+      mermaid.initialize({startOnLoad:false, theme: theme==='dark' ? 'dark' : 'neutral', securityLevel:'strict'});
+      mermaid.run({querySelector:'pre.mermaid'}).catch(()=>{}).then(()=>{ mermaidState = 2; });
+    }catch(e){ mermaidState = 2; }
+  };
+  s.onerror = ()=>{ mermaidState = 0; };
+  document.head.appendChild(s);
+}
+function showNote(slug, heading){
+  window.examkitShow('notes');
+  const sec = document.getElementById('note-'+slug); if(!sec) return;
+  q.value = ''; filter();
+  let target = sec;
+  // The card's heading is raw Markdown (what validate.py checked); the DOM holds rendered text. Strip inline marks on both sides.
+  const plain = s => String(s).replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`~]/g, '').replace(/\s+/g, ' ').trim();
+  if(heading){ const want = plain(heading); for(const h of sec.querySelectorAll('h1,h2,h3,h4,h5,h6')) if(plain(h.textContent)===want){ target = h; break; } }
+  target.scrollIntoView({block:'start'});
+}
+window.examkitNote = showNote;
+nav.addEventListener('click', e=>{ const a = e.target.closest('[data-slug]'); if(a){ e.preventDefault(); showNote(a.dataset.slug, null); } });
+document.addEventListener('examkit:show', e=>{ if(e.detail==='notes') drawMermaid(); });
+if(!document.getElementById('view-notes').hidden) drawMermaid();
 })();
 </script>
 <script>
 (function(){
 const CARDS = JSON.parse(document.getElementById('cards').textContent);
 const BYID = Object.fromEntries(CARDS.map(c=>[c.id,c]));
-// Dienste aus dem Reiter "Dienste": auf der Rueckseite fuer jeden in der Musterloesung genannten Dienst einen Kurzsteckbrief
-const DIENSTE = LOOKUP ? (LOOKUP.dienste || []) : [];
-const SVC = DIENSTE.flatMap(x => x.d.split('·').map(n => ({x, n: n.trim().replace(/^(Amazon|AWS) /,'')})))
-  .filter(o => o.n.length > 2).sort((a,b) => b.n.length - a.n.length);
-function servicesIn(text){
-  let t = ' '+text+' '; const found = [];
-  for(const o of SVC){
-    const re = new RegExp('(^|[^A-Za-z])'+o.n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![A-Za-z])','i');
-    if(re.test(t)){ if(!found.includes(o.x)) found.push(o.x); t = t.replace(re,'$1 '); }
-  }
-  return found.slice(0,3);
-}
-const DECKS = {alle:'Alle',luecken:'Letzte Lücken',pruefung:'Prüfungsfragen',janein:'Ja / Nein',dienste:'Dienste',begriffe:'Begriffe',signale:'Signale',fallen:'Fallen',v11:'Neue Themen',metriken:'Metriken',abkuerzungen:'Abkürzungen',vokabeln:'Vokabeln', ...(CONFIG.decks||{})};
-const KOMPASS = CONFIG.compass_url || null; // notes reader; null until one exists (Session 2)
-const NOTIZ = {'00':'00-spickzettel','01':'01-definitionen-abgrenzungen','02':'02-dienste-uebersicht','03':'03-foundation-models','04':'04-responsible-ai-security','05':'05-uebungsfragen','06':'06-abkuerzungen-konzepte','07':'07-dienste-im-einsatz','08':'08-metriken-verstehen','09':'09-fallstricke','10':'10-offene-fragen','11':'11-lernmodus','AAA':'AAA-pruefungsmorgen','AAB':'AAB-was-v11-geaendert-hat'};
-function kompassLink(src){ const m = String(src).match(/(?:^|[^0-9A-Za-z])(0\d|1[01]|AAA|AAB)(?=$|[^0-9A-Za-z])/); return m && NOTIZ[m[1]] ? KOMPASS+'#'+NOTIZ[m[1]] : KOMPASS; }
+const DECKS = {alle: T('deck_all'), ...(CONFIG.decks||{})};
+// Card source note:<slug>#<heading> -> jump into the notes tab
+const noteRef = src => { const m = /^note:([^#]+)#(.+)$/.exec(String(src)); return m ? {slug: m[1], heading: m[2]} : null; };
 // Zufallsrang je Karte, bei jedem Laden neu: mischt innerhalb gleicher Prioritaet bzw. gleichen Fachs
 const RANG = Object.fromEntries(CARDS.map(c=>[c.id, Math.random()]));
 // Wiederholung nach Kartenzahl statt nach Uhrzeit: Pausen kosten nichts, nichts staut sich.
@@ -339,10 +412,10 @@ function counts(){
   if(ui.fach==null){ info.hidden = true; return; }
   const P = pool(), offen = P.filter(c=>!ui.fachSeen.has(c.id)).length;
   info.hidden = false;
-  info.innerHTML = `Durchgehen: Fach „${FACHNAME[ui.fach]}“ - noch ${offen} von ${P.length + [...ui.fachSeen].filter(id=>BYID[id] && !P.includes(BYID[id])).length} Karten. <button type="button" id="fachaus">Beenden</button>`;
+  info.innerHTML = `${T('walk_info', {name: FACHNAME[ui.fach], open: offen, total: P.length + [...ui.fachSeen].filter(id=>BYID[id] && !P.includes(BYID[id])).length})} <button type="button" id="fachaus">${T('end')}</button>`;
   $('fachaus').onclick = ()=>setFach(null);
 }
-const FACHNAME = ['neu','wackelt','fast','sitzt'];
+const FACHNAME = [0,1,2,3].map(i=>T(`box_${i}`));
 function setFach(f){ ui.fach = (f===ui.fach) ? null : f; ui.fachSeen = new Set(); ui.cur = null; next(); }
 function pick(){
   if(ui.fach!=null){
@@ -383,77 +456,79 @@ function render(){
   const c = ui.cur, s = $('stage');
   if(!c){
     if(ui.fach!=null){
-      s.innerHTML = `<div class="empty"><strong>Fach „${FACHNAME[ui.fach]}“: alle Karten durch.</strong><div class="row"><button class="btn primary" type="button" id="fachnochmal">Noch einmal durchgehen</button><button class="btn" type="button" id="fachende">Zurück zum normalen Lernen</button></div></div>`;
+      s.innerHTML = `<div class="empty"><strong>${T('empty_box', {name: FACHNAME[ui.fach]})}</strong><div class="row"><button class="btn primary" type="button" id="fachnochmal">${T('again_box')}</button><button class="btn" type="button" id="fachende">${T('back_normal')}</button></div></div>`;
       $('fachnochmal').onclick = ()=>{ ui.fachSeen = new Set(); ui.cur = null; next(); };
       $('fachende').onclick = ()=>setFach(null);
       return;
     }
-    s.innerHTML = `<div class="empty"><strong>In dieser Auswahl sind keine Karten.</strong></div>`;
+    s.innerHTML = `<div class="empty"><strong>${T('empty_selection')}</strong></div>`;
     return;
   }
   const S = st(c.id);
-  const fach = S.b===0?'neu':S.b>=3?'sitzt':'Fach '+S.b;
-  let html = `<article class="card"><div class="card-head"><span>${esc(DECKS[c.deck]||c.deck)}${prio(c)===1?' · Prio 1':prio(c)===3?' · Prio 3':''}${S.u?' (eigene Wahl)':''}</span><span>${fach}${S.w?' · '+S.w+'× falsch':''}${c.erst?' · '+esc(c.erst.replace('1. Versuch: ','1. Versuch ')):''}</span></div>
+  const fach = S.b===0 ? T('box_0') : S.b>=3 ? T('box_3') : T('box_n', {n: S.b});
+  let html = `<article class="card"><div class="card-head"><span>${esc(DECKS[c.deck]||c.deck)}${prio(c)===1 ? T('prio1') : prio(c)===3 ? T('prio3') : ''}${S.u ? T('own_choice') : ''}</span><span>${fach}${S.w ? T('wrong_times', {n: S.w}) : ''}</span></div>
     <div class="q">${esc(c.q)}</div></article>`;
   if(!ui.revealed){
-    html += `<div class="answer-in"><label class="hint" for="ans">Deine Antwort (optional, auch per Diktat)</label>
-      <textarea id="ans" placeholder="Antworten oder direkt umdrehen …"></textarea>
-      <div class="row"><button class="btn" id="flip">Umdrehen</button>
-      ${sample && !aiOff ? '<button class="btn primary" id="check">Prüfen lassen</button>':''}</div>
-      <div class="row"><button class="btn" id="speak" type="button">Frage vorlesen</button><button class="btn" id="skip" type="button">Später</button></div></div>`;
+    html += `<div class="answer-in"><label class="hint" for="ans">${T('answer_label')}</label>
+      <textarea id="ans" placeholder="${esc(T('answer_placeholder'))}"></textarea>
+      <div class="row"><button class="btn" id="flip">${T('flip')}</button>
+      ${sample && !aiOff ? `<button class="btn primary" id="check">${T('check')}</button>`:''}</div>
+      <div class="row"><button class="btn" id="speak" type="button">${T('speak')}</button><button class="btn" id="skip" type="button">${T('later')}</button></div></div>`;
   } else {
     const v = ui.verdict;
     html += `<div class="back">`;
     if(v){
-      if(v.wait) html += `<div class="verdict wait">Wird geprüft …</div>`;
+      if(v.wait) html += `<div class="verdict wait">${T('checking')}</div>`;
       else if(v.err) html += `<div class="verdict teilweise">${esc(v.err)}</div>`;
-      else html += `<div class="verdict ${v.urteil}"><b>${esc(v.urteil)}</b>${v.fehlt? ' · '+esc(v.fehlt):''}</div>`;
+      else html += `<div class="verdict ${v.urteil}"><b>${esc(T(`verdict_${v.urteil}`))}</b>${v.fehlt? ' · '+esc(v.fehlt):''}</div>`;
     }
-    html += `<div class="solution"><span class="lbl">Musterlösung</span><div class="a">${esc(c.a)}</div>${c.unsure?`<div class="unsure">⚠ Unsicher: ${esc(c.unsure)}</div>`:''}${c.conflict?`<div class="unsure">⚠ Zwei Fassungen: ${esc(c.conflict)}</div>`:''}${c.ctx?`<div class="ctx"><span class="lbl">Hintergrund${c.ctx_src === 'model' || c.ctx_src === 'modell'?' · Modellwissen, ungeprüft':''}</span><div>${esc(c.ctx)}</div></div>`:''}
-      ${(()=>{ const sv = servicesIn(c.a); return sv.length ? `<div class="ctx"><span class="lbl">Dienst im Überblick</span>${sv.map(x=>`<div class="svcmini"><b>${esc(x.d)}</b>: ${esc(x.funktionen ? x.funktionen.join(' · ') : x.wofuer)}${x.nicht&&x.nicht!=='-'?`<span class="svcnot">Nicht: ${esc(x.nicht)}</span>`:''}</div>`).join('')}</div>` : ''; })()}
-      <span class="src">Quelle: ${esc(c.src)}</span>${KOMPASS?`<a class="more" href="${kompassLink(c.src)}" target="_blank" rel="noopener">Im Lernkompass nachlesen →</a>`:''}</div>
+    html += `<div class="solution"><span class="lbl">${T('solution')}</span><div class="a">${esc(c.a)}</div>${c.unsure?`<div class="unsure">${T('unsure_prefix')}${esc(c.unsure)}</div>`:''}${c.conflict?`<div class="unsure">${T('conflict_prefix')}${esc(c.conflict)}</div>`:''}${c.ctx?`<div class="ctx"><span class="lbl">${T('context')}${c.ctx_src === 'model' ? T('model_marker') : ''}</span><div>${esc(c.ctx)}</div></div>`:''}
+      <span class="src">${T('source_prefix')}${esc(c.src)}</span>${noteRef(c.src)?`<button type="button" class="more" id="readnote">${T('read_note')}</button>`:''}</div>
       <div class="grade">
-        <button class="btn g-bad ${v&&v.urteil==='falsch'?'sug':''}" data-g="0">Falsch</button>
-        <button class="btn g-mid ${v&&v.urteil==='teilweise'?'sug':''}" data-g="1">Teilweise</button>
-        <button class="btn g-ok ${v&&v.urteil==='richtig'?'sug':''}" data-g="2">Gewusst</button>
+        <button class="btn g-bad ${v&&v.urteil==='falsch'?'sug':''}" data-g="0">${T('grade_0')}</button>
+        <button class="btn g-mid ${v&&v.urteil==='teilweise'?'sug':''}" data-g="1">${T('grade_1')}</button>
+        <button class="btn g-ok ${v&&v.urteil==='richtig'?'sug':''}" data-g="2">${T('grade_2')}</button>
       </div>
-      <div class="tagrow"><span>Relevanz:</span><button type="button" class="tag" data-u="hoch" aria-pressed="${S.u==='hoch'}">Wichtig</button><button type="button" class="tag" data-u="niedrig" aria-pressed="${S.u==='niedrig'}">Unwichtig</button></div>
-      <details class="report"><summary>Karte ungeeignet? Hinweis an Claude</summary>
-        <textarea id="rep" placeholder="Was stimmt nicht? Z.B. Frage unklar, Antwort falsch, nicht prüfungsrelevant …"></textarea>
-        <div class="row"><button class="btn" id="repsend" type="button">Hinweis speichern</button></div>
+      <div class="tagrow"><span>${T('relevance')}</span><button type="button" class="tag" data-u="hoch" aria-pressed="${S.u==='hoch'}">${T('tag_high')}</button><button type="button" class="tag" data-u="niedrig" aria-pressed="${S.u==='niedrig'}">${T('tag_low')}</button></div>
+      <details class="report"><summary>${T('report_summary')}</summary>
+        <textarea id="rep" placeholder="${esc(T('report_placeholder'))}"></textarea>
+        <div class="row"><button class="btn" id="repsend" type="button">${T('report_send')}</button></div>
         <span class="repstate" id="repstate"></span></details></div>`;
   }
   s.innerHTML = html;
   if(!ui.revealed){
     $('flip').onclick = ()=>{ ui.revealed=true; render(); };
     $('skip').onclick = ()=>later(c);
-    $('speak').onclick = ()=>speak(c.q, c.deck==='pruefung' ? 'en-US' : 'de-DE');
+    $('speak').onclick = ()=>speak(c.q, cardLang(c, c.q));
     const ch=$('check'); if(ch) ch.onclick = ()=>check(c, $('ans').value.trim());
   } else {
     s.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>grade(c, +b.dataset.g));
     s.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>tag(c, b.dataset.u));
     $('repsend').onclick = ()=>report(c);
+    const rn = $('readnote'); if(rn) rn.onclick = ()=>{ const r = noteRef(c.src); window.examkitNote(r.slug, r.heading); };
   }
 }
 
 function remember(id){ ui.last.push(id); if(ui.last.length>3) ui.last.shift(); }
 
 function speak(text, lang){
-  if(!window.speechSynthesis){ $('aistate').textContent = 'Vorlesen wird in diesem Browser nicht unterstützt.'; return; }
-  say([[text, lang||'de-DE']]);
+  if(!window.speechSynthesis){ $('aistate').textContent = T('tts_unsupported'); return; }
+  say([[text, lang || T('tts_lang')]]);
 }
 
 // Vorlesen: Satz fuer Satz (lange Einzelaeusserungen brechen in manchen Browsern ab), Stimme je Sprache.
 // Das Promise loest spaetestens nach einer grosszuegigen Zeitgrenze auf, falls "onend" ausbleibt.
+// Language for reading a card aloud: the card's `lang` via CONFIG.tts (BCP-47), else a word heuristic (German or English)
 const DEWORT = /[äöüß]|\b(der|die|das|und|ist|nicht|mit|ein|eine|wird|oder|bei|im|zu|kein|nur|statt)\b/i;
-const langOf = t => DEWORT.test(t) ? 'de-DE' : 'en-US';
+const TTS = Object.assign({de:'de-DE', en:'en-US'}, CONFIG.tts||{});
+const cardLang = (c, text) => c.lang ? (TTS[c.lang] || c.lang) : (DEWORT.test(String(text)) ? TTS.de : TTS.en);
 const sprech = t => String(t).replace(/\s*[→–]\s*/g,', ').replace(/\s*[·•]\s*/g,'. ').replace(/⊃/g,' umfasst ').replace(/\s+/g,' ').trim();
 // Zeilen einzeln, lange Zeilen an Satzenden, kurze Saetze (z.B. "A.") wieder zu Stuecken bis ~220 Zeichen zusammen
 function stuecke(text){
   const out = [];
   for(const line of String(text).split(/\n+/)){
     let cur = '';
-    for(const s of sprech(line).replace(/([.!?]) +(?=[A-ZÄÖÜ])/g, '$1\u0001').split('\u0001')){
+    for(const s of sprech(line).replace(/([.!?]) +(?=[A-Z\u00c4\u00d6\u00dc])/g, '$1\u0001').split('\u0001')){
       if(cur && (cur + ' ' + s).length > 220){ out.push(cur); cur = s; } else cur = cur ? cur + ' ' + s : s;
     }
     if(cur.trim()) out.push(cur.trim());
@@ -494,24 +569,15 @@ const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
 function hoerSave(){ try{ localStorage.setItem(LSA, JSON.stringify({voice:hoer.voice, pause:hoer.pause})); }catch(e){} }
 function hoerUI(msg){
   $('hoerbtn').setAttribute('aria-pressed', String(hoer.on));
-  $('hoerbtn').textContent = hoer.on ? 'Hörmodus beenden' : 'Hörmodus';
+  $('hoerbtn').textContent = hoer.on ? T('listen_stop') : T('listen');
   $('hoervoice').setAttribute('aria-pressed', String(hoer.voice && !hoer.micOff));
-  $('hoerpause').textContent = 'Denkpause ' + hoer.pause + ' s';
+  $('hoerpause').textContent = T('think_pause', {n: hoer.pause});
   $('hoerhalt').hidden = !hoer.on;
-  $('hoerhalt').textContent = hoer.paused ? 'Weiter' : 'Pause';
+  $('hoerhalt').textContent = hoer.paused ? T('resume') : T('pause');
   $('hoerhalt').setAttribute('aria-pressed', String(hoer.paused));
   if(msg!=null) $('hoerstate').textContent = msg;
 }
-// Prüfungsfragen: "Correct: B. …" englisch, dazu der erste echte Begründungssatz aus dem Hintergrund
-function antwortTeile(c){
-  if(c.deck!=='pruefung') return [[c.a, 'de-DE']];
-  const m = String(c.a).match(/^Richtig:\s*([A-E](?:[\s,&und]+[A-E])*)\s*[–-]\s*([\s\S]*)$/);
-  if(!m) return [[c.a, langOf(c.a)]];
-  const warum = String(c.ctx||'').split('\n').map(s=>s.trim()).find(s=>s && !/^(1\. Versuch|[A-E] falsch|AWS-Begründung)/.test(s));
-  const parts = [['Correct: ' + m[1] + '. ' + m[2], 'en-US']];
-  if(warum) parts.push([warum, langOf(warum)]);
-  return parts;
-}
+const antwortTeile = c => [[c.a, cardLang(c, c.a)]];
 function beep(freqs){
   try{
     const ac = hoer.ac; if(!ac) return Promise.resolve();
@@ -533,7 +599,7 @@ function listen(ms){
     const t1 = setTimeout(()=>{ try{ r.stop(); }catch(e){} }, ms);
     const t2 = setTimeout(()=>fin(out||{alts:[]}), ms + 3000);
     try{ r = new Rec(); }catch(e){ return fin({err:'start'}); }
-    hoer.rec = r; r.lang = 'de-DE'; r.interimResults = false; r.continuous = false; r.maxAlternatives = 5;
+    hoer.rec = r; r.lang = T('voice_lang'); r.interimResults = false; r.continuous = false; r.maxAlternatives = 5;
     r.onresult = e=>{ out = {alts: Array.from(e.results[0]||[]).map(a=>a.transcript)}; };
     r.onerror = e=>{ out = out || {err: e.error}; };
     r.onend = ()=>fin(out||{alts:[]});
@@ -542,11 +608,12 @@ function listen(ms){
 }
 // Eindeutig heisst: genau eine Bedeutung in einer der erkannten Varianten
 const W = s => new RegExp('(^|[\\s.,!?])(' + s + ')(?=$|[\\s.,!?])');
-const WORT = [[W('stopp?|ende|beenden|aufhören'),'stop'], [W('nochmal|noch mal|wiederholen|wiederhole|wiederholung'),'again'], [W('später|überspringen|weiter'),'later'],
-  [W('teils|teil|teilweise|halb'),1], [W('ja|jap|jo|jawohl|gewusst|richtig|yes'),2], [W('nein|nee|ne|nö|falsch|neun|no'),0]];
+const WORT = [[W(T('voice_stop')),'stop'], [W(T('voice_again')),'again'], [W(T('voice_later')),'later'],
+  [W(T('voice_partly')),1], [W(T('voice_yes')),2], [W(T('voice_no')),0]];
+const NEG = new RegExp(T('voice_negation_re'), 'g');
 function deuten(alts){
   for(const a of alts){
-    const t = ' ' + a.toLowerCase().replace(/nicht (gewusst|richtig)/g,'falsch') + ' ';
+    const t = ' ' + a.toLowerCase().replace(NEG, T('voice_negation_to')) + ' ';
     const hits = [...new Set(WORT.filter(([re])=>re.test(t)).map(([,v])=>v))];
     if(hits.length===1) return hits[0];
   }
@@ -559,38 +626,37 @@ async function lockOn(){
 async function hoerCard(){
   const t = ++hoer.token, c = ui.cur, alive = ()=>hoer.on && !hoer.paused && t===hoer.token && ui.cur===c;
   hoerStopRec();
-  if(!c){ hoerUI('Keine Karten in dieser Auswahl.'); say([['Keine Karten in dieser Auswahl.','de-DE']]); return; }
-  const pf = c.deck==='pruefung';
+  if(!c){ hoerUI(T('hoer_none')); say([[T('hoer_none'), T('tts_lang')]]); return; }
   // Nach "Weiter" bei schon aufgedeckter Karte: gleich mit der Antwort beginnen
   if(!ui.revealed){
-    hoerUI('Frage …');
-    await say([[c.q, pf ? 'en-US' : 'de-DE']]); if(!alive()) return;
-    const sek = hoer.pause * (pf ? 2 : 1);
-    hoerUI('Denkpause ' + sek + ' s …');
+    hoerUI(T('hoer_q'));
+    await say([[c.q, cardLang(c, c.q)]]); if(!alive()) return;
+    const sek = hoer.pause;
+    hoerUI(T('hoer_think', {n: sek}));
     await wait(sek*1000); if(!alive()) return;
     ui.revealed = true; render();
   }
-  hoerUI('Antwort …');
+  hoerUI(T('hoer_a'));
   await say(antwortTeile(c)); if(!alive()) return;
-  if(!hoer.voice || !Rec || hoer.micOff){ hoerUI('Tippe: Falsch, Teilweise oder Gewusst.'); return; }
-  hoerUI('Sag jetzt: ja, teils oder nein …');
+  if(!hoer.voice || !Rec || hoer.micOff){ hoerUI(T('hoer_tap')); return; }
+  hoerUI(T('hoer_say'));
   await beep([880]); if(!alive()) return;
   const r = await listen(6000); if(!alive()) return;
   if(['not-allowed','service-not-allowed','audio-capture','start'].includes(r.err)){
-    hoer.micOff = true; hoerUI('Mikrofon ist hier nicht verfügbar - bitte tippen.');
-    await say([['Mikrofon nicht verfügbar. Bitte tippen.','de-DE']]); return;
+    hoer.micOff = true; hoerUI(T('hoer_mic_off'));
+    await say([[T('hoer_mic_off_say'), T('tts_lang')]]); return;
   }
   const g = deuten(r.alts||[]);
-  if(g==='stop'){ await say([['Hörmodus beendet.','de-DE']]); if(alive()) hoerStop(); return; }
+  if(g==='stop'){ await say([[T('hoer_ended'), T('tts_lang')]]); if(alive()) hoerStop(); return; }
   if(g==='again'){ ui.revealed = false; render(); hoerCard(); return; }
-  if(g==='later'){ hoerUI('Später.'); await say([['Später.','de-DE']]); if(alive()) later(c); return; }
+  if(g==='later'){ hoerUI(T('hoer_later')); await say([[T('hoer_later'), T('tts_lang')]]); if(alive()) later(c); return; }
   if(g===null){
-    const gehoert = r.alts && r.alts[0] ? ' (gehört: „' + r.alts[0] + '“)' : '';
-    hoerUI('Nicht verstanden' + gehoert + ' - bitte tippen.');
-    await beep([330, 330]); if(alive()) await say([['Nicht verstanden. Bitte tippen.','de-DE']]); return;
+    const gehoert = r.alts && r.alts[0] ? T('hoer_heard', {t: r.alts[0]}) : '';
+    hoerUI(T('hoer_notunderstood', {heard: gehoert}));
+    await beep([330, 330]); if(alive()) await say([[T('hoer_notunderstood_say'), T('tts_lang')]]); return;
   }
-  hoerUI('Abgelegt: ' + GNAME[g]);
-  await say([['Abgelegt: ' + GNAME[g] + '.','de-DE']]); if(!alive()) return;
+  hoerUI(T('hoer_filed', {g: GNAME[g]}));
+  await say([[T('hoer_filed_say', {g: GNAME[g]}), T('tts_lang')]]); if(!alive()) return;
   grade(c, g);
 }
 function hoerStart(){
@@ -598,7 +664,7 @@ function hoerStart(){
   // Ton und Sprache muessen im Tipp-Ereignis entsperrt werden (iOS)
   try{ hoer.ac = hoer.ac || new (window.AudioContext||window.webkitAudioContext)(); hoer.ac.resume(); }catch(e){}
   lockOn();
-  if(!window.speechSynthesis){ hoerUI('Vorlesen wird in diesem Browser nicht unterstützt.'); hoer.on = false; return; }
+  if(!window.speechSynthesis){ hoerUI(T('tts_unsupported')); hoer.on = false; return; }
   if(ui.cur){ ui.revealed = false; ui.verdict = null; render(); hoerCard(); } else next();
 }
 function hoerStop(){
@@ -611,11 +677,11 @@ $('hoerbtn').onclick = ()=> hoer.on ? hoerStop() : hoerStart();
 // Pause: Vorlesen/Zuhoeren sofort abbrechen; "Weiter" setzt bei der aktuellen Karte wieder an (Frage oder, falls aufgedeckt, Antwort)
 $('hoerhalt').onclick = ()=>{
   if(!hoer.on) return;
-  if(!hoer.paused){ hoer.paused = true; hoer.token++; hoerStopRec(); try{ speechSynthesis.cancel(); }catch(e){} hoerUI('Pausiert - „Weiter“ tippen.'); return; }
+  if(!hoer.paused){ hoer.paused = true; hoer.token++; hoerStopRec(); try{ speechSynthesis.cancel(); }catch(e){} hoerUI(T('hoer_paused')); return; }
   hoer.paused = false; try{ if(hoer.ac) hoer.ac.resume(); }catch(e){} lockOn(); hoerUI(); hoerCard();
 };
 $('hoervoice').onclick = ()=>{
-  if(!Rec){ hoerUI('Spracheingabe gibt es in diesem Browser nicht - der Hörmodus geht trotzdem, mit Tippen.'); return; }
+  if(!Rec){ hoerUI(T('hoer_novoice')); return; }
   hoer.voice = !hoer.voice; hoer.micOff = false; hoerSave(); hoerUI(hoer.on ? null : '');
 };
 $('hoerpause').onclick = ()=>{ hoer.pause = {5:10, 10:20, 20:5}[hoer.pause]; hoerSave(); hoerUI(); };
@@ -627,26 +693,17 @@ async function check(c, answer){
   ui.revealed=true; ui.verdict={wait:true}; render();
   try{
     // grading_prompt is only the first line (exam-specific); the rules below are engine policy
-    const prompt = CONFIG.grading_prompt.replaceAll('{exam_code}', () => CONFIG.exam_code ?? '').replaceAll('{title}', () => CONFIG.title ?? '') + `
-Bewerte AUSSCHLIESSLICH gegen die Musterlösung unten, nicht gegen dein eigenes Wissen. Wenn die Antwort etwas behauptet, das in der Musterlösung nicht vorkommt, zählt das nicht als Fehler, solange der Kern stimmt.
-Steht in der Frage, dass eine Auswahl genügt (z.B. "drei genügen"), ist eine richtige Auswahl in dieser Anzahl "richtig", auch wenn andere Kernbegriffe fehlen.
-Die Antwort ist oft diktiert: Tippfehler, Lautschrift und deutsch ausgesprochene englische Begriffe großzügig tolerieren.
-
-Frage: ${c.q}
-Musterlösung: ${c.a}
-Kernbegriffe: ${(c.key||[]).join(', ')}
-Antwort der Lernenden: ${answer}
-
-Antworte nur mit JSON: {"urteil":"richtig"|"teilweise"|"falsch","fehlt":"ein kurzer Satz auf Deutsch, was fehlt oder falsch ist; leer wenn richtig"}`;
+    const prompt = CONFIG.grading_prompt.replaceAll('{exam_code}', () => CONFIG.exam_code ?? '').replaceAll('{title}', () => CONFIG.title ?? '')
+      + '\n' + T('grading_tail', {q: c.q, a: c.a, key: (c.key||[]).join(', '), answer});
     const r = await sample.json(prompt, {modelTier:'quick'});
     const u = r && ['richtig','teilweise','falsch'].includes(r.urteil) ? r.urteil : null;
-    ui.verdict = u ? {urteil:u, fehlt: String(r.fehlt||'')} : {err:'Die Bewertung kam unvollständig zurück. Vergleiche selbst mit der Musterlösung.'};
+    ui.verdict = u ? {urteil:u, fehlt: String(r.fehlt||'')} : {err: T('ai_incomplete')};
   }catch(e){
     const hide = ['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'];
-    if(hide.includes(e.code)){ aiOff=true; ui.verdict={err:'Die KI-Bewertung ist hier nicht verfügbar. Vergleiche selbst mit der Musterlösung.'}; }
-    else if(e.code==='rate_limited') ui.verdict={err:'Gerade zu viele Anfragen oder dein Nutzungslimit ist erreicht. Vergleiche selbst, später geht es wieder.'};
-    else if(e.code==='session_expired') ui.verdict={err:'Bitte bei claude.ai neu anmelden, dann geht die Bewertung wieder.'};
-    else ui.verdict={err:'Die Bewertung hat nicht geklappt. Vergleiche selbst mit der Musterlösung.'};
+    if(hide.includes(e.code)){ aiOff=true; ui.verdict={err: T('ai_unavailable')}; }
+    else if(e.code==='rate_limited') ui.verdict={err: T('ai_rate')};
+    else if(e.code==='session_expired') ui.verdict={err: T('ai_login')};
+    else ui.verdict={err: T('ai_failed')};
   }
   if(ui.cur===c && ui.revealed) render();
 }
@@ -671,7 +728,7 @@ function grade(c, g){
 }
 
 // Verlauf der letzten Bewertungen: lokal und in der Datenbank (fortschritt/verlauf), damit er auf allen Geraeten gleich ist
-const LSH = LS + '-verlauf', HMAX = 50, GNAME = ['Falsch','Teilweise','Gewusst'];
+const LSH = LS + '-verlauf', HMAX = 50, GNAME = [0,1,2].map(i=>T(`grade_${i}`));
 let hist = []; try{ hist = JSON.parse(localStorage.getItem(LSH)||'[]'); }catch(e){}
 let histRef = null;
 function saveHist(){
@@ -689,12 +746,12 @@ function mergeHist(remote){
 function logHist(id, g, prev){ hist.unshift({id, g, prev, t: Date.now()}); hist = hist.slice(0, HMAX); saveHist(); if(!$('hist').hidden) renderHist(); }
 function renderHist(){
   const box = $('hist');
-  if(!hist.length){ box.innerHTML = '<span class="none">Noch keine Bewertungen im Verlauf.</span>'; return; }
+  if(!hist.length){ box.innerHTML = `<span class="none">${T('hist_empty')}</span>`; return; }
   const latest = new Set(), seenId = new Set();
   hist.forEach((h,i)=>{ if(!seenId.has(h.id)){ seenId.add(h.id); latest.add(i); } });
   box.innerHTML = hist.map((h,i)=>{ const c = BYID[h.id]; if(!c) return '';
-    const zeit = new Date(h.t).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-    const knoepfe = latest.has(i) ? GNAME.map((n,g)=>`<button type="button" class="tag" data-hi="${i}" data-hg="${g}" aria-pressed="${h.g===g}">${n}</button>`).join('') : '<span class="none">später erneut bewertet</span>';
+    const zeit = new Date(h.t).toLocaleTimeString(T('locale'),{hour:'2-digit',minute:'2-digit'});
+    const knoepfe = latest.has(i) ? GNAME.map((n,g)=>`<button type="button" class="tag" data-hi="${i}" data-hg="${g}" aria-pressed="${h.g===g}">${n}</button>`).join('') : `<span class="none">${T('hist_regraded')}</span>`;
     return `<div class="hitem"><span class="hq">${zeit} · ${esc(c.q)}</span><div class="tagrow">${knoepfe}</div></div>`; }).join('');
   box.querySelectorAll('[data-hi]').forEach(b=>b.onclick=()=>regrade(+b.dataset.hi, +b.dataset.hg));
 }
@@ -709,13 +766,13 @@ $('histbtn').onclick = ()=>{ const box = $('hist'); box.hidden = !box.hidden; if
 // Hinweis zu einer Karte: landet in der Datenbank (Sammlung "feedback"), Claude liest sie in der naechsten Session
 async function report(c){
   const text = $('rep').value.trim(), out = $('repstate');
-  if(!text){ out.textContent = 'Bitte kurz beschreiben, was nicht passt.'; return; }
-  if(!db){ out.textContent = 'Keine Verbindung zur Datenbank - bitte im Chat melden.'; return; }
-  $('repsend').disabled = true; out.textContent = 'Wird gespeichert …';
+  if(!text){ out.textContent = T('report_empty'); return; }
+  if(!db){ out.textContent = T('report_nodb'); return; }
+  $('repsend').disabled = true; out.textContent = T('report_saving');
   try{
     await db.collection('feedback').add({id: c.id, q: c.q, text, status: 'offen', t: Date.now()});
-    $('rep').value = ''; out.textContent = 'Gespeichert. Claude sieht den Hinweis, sobald du im Chat „Hinweise abarbeiten“ sagst.';
-  }catch(e){ out.textContent = 'Speichern hat nicht geklappt - bitte im Chat melden.'; }
+    $('rep').value = ''; out.textContent = T('report_saved');
+  }catch(e){ out.textContent = T('report_failed'); }
   $('repsend').disabled = false;
 }
 
@@ -742,8 +799,8 @@ function persist(id, S){
       // Nach einem Ausfall den ganzen Stand hochladen, nicht nur die aktuelle Karte
       if(!docExists || dirty){ await docRef.set({cards: state.cards, v:1}); docExists = true; dirty = false; }
       else if(id) await docRef.update({cards: {[id]: S}});
-      $('sync').textContent = 'Lernstand: gespeichert';
-    }catch(e){ dirty = true; $('sync').textContent = 'Lernstand: nur auf diesem Gerät, wird nachgeladen'; }
+      $('sync').textContent = T('sync_saved');
+    }catch(e){ dirty = true; $('sync').textContent = T('sync_pending'); }
   });
 }
 function pushAll(){ if(docRef && dirty) persist(null, null); }
@@ -766,17 +823,17 @@ let resetStep = 0, resetTimer = null, resetBackup = null;
 function resetRender(){
   const box = $('resetbox'); clearTimeout(resetTimer);
   const ids = pool().map(c=>c.id).filter(id=>state.cards[id]);
-  const wo = (ui.deck==='alle' ? 'alle Stapel' : `Stapel „${esc(ui.deck)}“`) + (ui.fach==null ? '' : `, Fach „${FACHNAME[ui.fach]}“`) + (ui.p1 ? ', nur Priorität 1' : '');
-  const nein = '<button type="button" data-r="nein">Abbrechen</button>';
+  const wo = (ui.deck==='alle' ? T('reset_all') : T('reset_deck', {deck: esc(ui.deck)})) + (ui.fach==null ? '' : T('reset_box', {name: FACHNAME[ui.fach]})) + (ui.p1 ? T('reset_p1') : '');
+  const nein = `<button type="button" data-r="nein">${T('cancel')}</button>`;
   if(resetStep===0){ box.hidden = true; box.innerHTML = ''; return; }
   box.hidden = false;
-  if(resetStep===3){ box.innerHTML = `Zurückgesetzt. <button type="button" data-r="undo">Rückgängig machen</button> · <button type="button" data-r="nein">Schließen</button>`; return; }
-  if(!ids.length){ box.innerHTML = `Hier gibt es keinen Lernstand zum Zurücksetzen (${wo}). ${nein}`; return; }
-  if(resetStep===1) box.innerHTML = `<b>Achtung:</b> Der Lernstand von <b>${ids.length} Karten</b> geht verloren (${wo}). Sie stehen danach wieder auf „neu“. <button type="button" data-r="weiter">Weiter</button> · ${nein}`;
+  if(resetStep===3){ box.innerHTML = `${T('reset_done')} <button type="button" data-r="undo">${T('undo')}</button> · <button type="button" data-r="nein">${T('close')}</button>`; return; }
+  if(!ids.length){ box.innerHTML = `${T('reset_none', {where: wo})} ${nein}`; return; }
+  if(resetStep===1) box.innerHTML = `${T('reset_warn', {n: ids.length, where: wo})} <button type="button" data-r="weiter">${T('next')}</button> · ${nein}`;
   if(resetStep===2){
-    box.innerHTML = `<b>Letzte Rückfrage:</b> ${ids.length} Karten wirklich zurücksetzen? <button type="button" data-r="los" disabled>Endgültig zurücksetzen (3)</button> · ${nein}`;
+    box.innerHTML = `${T('reset_last', {n: ids.length})} <button type="button" data-r="los" disabled>${T('reset_final_n', {n: 3})}</button> · ${nein}`;
     const b = box.querySelector('[data-r=los]'); let n = 3;
-    const tick = ()=>{ n--; if(n>0){ b.textContent = `Endgültig zurücksetzen (${n})`; resetTimer = setTimeout(tick, 1000); } else { b.textContent = 'Endgültig zurücksetzen'; b.disabled = false; } };
+    const tick = ()=>{ n--; if(n>0){ b.textContent = T('reset_final_n', {n}); resetTimer = setTimeout(tick, 1000); } else { b.textContent = T('reset_final'); b.disabled = false; } };
     resetTimer = setTimeout(tick, 1000);
   }
   // ohne Weiterklicken nach 30 s von selbst wieder zu
@@ -812,11 +869,11 @@ let planDone = {}; try{ planDone = JSON.parse(localStorage.getItem(LSP)||'{}'); 
 let planRef = null;
 function renderPlan(){
   const out = $('plan-out'); const all = PLAN.tage.flatMap(t=>t.items); const n = all.filter(i=>planDone[i.id]).length;
-  out.innerHTML = `<span class="pstand">${n} von ${all.length} erledigt${PLAN.links_alle?` · <a href="${esc(PLAN.links_alle.u)}" target="_blank" rel="noopener">${esc(PLAN.links_alle.t)}</a>`:''}</span>` +
+  out.innerHTML = `<span class="pstand">${T('plan_done', {n, total: all.length})}${PLAN.links_alle?` · <a href="${esc(PLAN.links_alle.u)}" target="_blank" rel="noopener">${esc(PLAN.links_alle.t)}</a>`:''}</span>` +
     PLAN.tage.map(t=>`<section class="pday"><h2>${esc(t.tag)}</h2><span class="ph">${esc(t.hinweis)}</span>${t.items.map(i=>`
-      <div class="pitem${planDone[i.id]?' done':''}"><input type="checkbox" data-pid="${i.id}" ${planDone[i.id]?'checked':''} aria-label="erledigt">
+      <div class="pitem${planDone[i.id]?' done':''}"><input type="checkbox" data-pid="${i.id}" ${planDone[i.id]?'checked':''} aria-label="${esc(T('plan_item_done'))}">
       <div><div class="pwas">${esc(i.was)}</div><div class="pmeta">${esc([i.wie,i.dauer].filter(Boolean).join(' · '))}</div>
-      <div class="plinks">${(i.links||[]).map(l=>`<a href="${esc(l.u)}" target="_blank" rel="noopener">${esc(l.t)} ↗</a>`).join('')}${i.act?`<button type="button" data-pact="${i.id}">${i.act.weak?'Karten: Nur Fehler':'Karten: Prio 1 · Fach „neu“'}</button>`:''}</div></div></div>`).join('')}</section>`).join('');
+      <div class="plinks">${(i.links||[]).map(l=>`<a href="${esc(l.u)}" target="_blank" rel="noopener">${esc(l.t)} ↗</a>`).join('')}${i.act?`<button type="button" data-pact="${i.id}">${i.act.weak ? T('plan_act_weak') : T('plan_act_p1')}</button>`:''}</div></div></div>`).join('')}</section>`).join('');
   out.querySelectorAll('[data-pid]').forEach(b=>b.onchange=()=>{ planDone[b.dataset.pid] = b.checked; savePlan(); renderPlan(); });
   out.querySelectorAll('[data-pact]').forEach(b=>b.onclick=()=>{ const it = all.find(i=>i.id===b.dataset.pact); planAct(it.act); });
 }
@@ -825,7 +882,7 @@ function planAct(a){
   ui.deck = 'alle'; ui.p1 = true; ui.weak = !!a.weak; ui.fach = null; ui.fachSeen = new Set(); ui.cur = null;
   saveLocal(); renderChips();
   if(a.fach!=null) setFach(a.fach); else next();
-  if(window.aifShow) window.aifShow('karten');
+  window.examkitShow('cards');
 }
 renderPlan();
 
@@ -833,11 +890,11 @@ renderChips(); next();
 
 (async ()=>{
   const cl = window.claude;
-  if(!cl || !cl.use){ $('sync').textContent='Lernstand: nur auf diesem Gerät'; return; }
+  if(!cl || !cl.use){ $('sync').textContent = T('sync_local'); return; }
   cl.use('sample').then(s=>{ sample = s; if(s && !ui.revealed) render(); }).catch(()=>{});
   try{
     db = await cl.use('db');
-    if(!db){ $('sync').textContent='Lernstand: nur auf diesem Gerät'; return; }
+    if(!db){ $('sync').textContent = T('sync_local'); return; }
     docRef = db.doc('fortschritt/stand');
     const snap = await docRef.get();
     docExists = snap.exists;
@@ -846,15 +903,15 @@ renderChips(); next();
     const ahead = Object.entries(state.cards).some(([id,L]) => !remote[id] || (L.t||0) > (remote[id].t||0));
     if(snap.exists){ merge(remote); saveLocal(); counts(); if(!ui.revealed) next(); }
     if(ahead){ dirty = true; pushAll(); }
-    $('sync').textContent = 'Lernstand: synchron';
+    $('sync').textContent = T('sync_synced');
     planRef = db.doc('fortschritt/plan');
     planRef.get().then(ps=>{ const r = ps.exists ? (ps.data()||{}).done||{} : {}; let ch=false; for(const [k,v] of Object.entries(r)) if(planDone[k]!==v && v){ planDone[k]=v; ch=true; } if(ch||!ps.exists) savePlan(); renderPlan(); }).catch(()=>{});
     planRef.onSnapshot(ps=>{ if(ps.exists){ const r=(ps.data()||{}).done||{}; if(JSON.stringify(r)!==JSON.stringify(planDone)){ planDone=r; try{ localStorage.setItem(LSP, JSON.stringify(planDone)); }catch(e){} renderPlan(); } } }, ()=>{});
     histRef = db.doc('fortschritt/verlauf');
     histRef.get().then(hs=>{ const r = hs.exists ? (hs.data()||{}).e : []; if(mergeHist(r) || !hs.exists) saveHist(); if(!$('hist').hidden) renderHist(); }).catch(()=>{});
     histRef.onSnapshot(hs=>{ if(hs.exists && mergeHist((hs.data()||{}).e)){ try{ localStorage.setItem(LSH, JSON.stringify(hist)); }catch(e){} if(!$('hist').hidden) renderHist(); } }, ()=>{});
-    docRef.onSnapshot(sn=>{ if(sn.exists){ docExists=true; const before=JSON.stringify(state.cards); merge((sn.data()||{}).cards); if(JSON.stringify(state.cards)!==before){ saveLocal(); counts(); } } }, ()=>{ $('sync').textContent='Lernstand: gespeichert, Abgleich pausiert'; });
-  }catch(e){ $('sync').textContent='Lernstand: nur auf diesem Gerät'; }
+    docRef.onSnapshot(sn=>{ if(sn.exists){ docExists=true; const before=JSON.stringify(state.cards); merge((sn.data()||{}).cards); if(JSON.stringify(state.cards)!==before){ saveLocal(); counts(); } } }, ()=>{ $('sync').textContent = T('sync_paused'); });
+  }catch(e){ $('sync').textContent = T('sync_local'); }
 })();
 })();
 </script>

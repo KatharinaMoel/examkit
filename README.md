@@ -16,6 +16,7 @@ certification prep (AWS), shared in case it is useful.
 
 ## Quickstart
 
+    python3 -m pip install --user -r requirements.txt   # python-markdown
     python3 engine/build.py example            # builds example/build/index.html
     python3 engine/build.py example --check    # validate only
     python3 -m pytest -q
@@ -23,4 +24,6 @@ certification prep (AWS), shared in case it is useful.
 ## Status
 
 Session 1 (2026-10-07): validator, build, template with config placeholders.
-Planned: coverage tab, notes tab, print pack, UI language files, demo on GitHub Pages.
+Session 2a (2026-10-07): coverage tab (cards and notes per guide item, red/yellow/green),
+notes tab (Markdown + Mermaid), UI language files `de`/`en`, hardening.
+Planned: print pack, progress export/import, demo on GitHub Pages.

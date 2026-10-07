@@ -16,10 +16,13 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 from engine import validate as v  # noqa: E402
+from engine import coverage as cov_mod  # noqa: E402
+from engine import notes as notes_mod  # noqa: E402
 
 TEMPLATE = HERE / "template" / "index.html"
+UI_DIR = HERE / "template"
 EMPTY_PLAN = {"stand": "", "links_alle": None, "tage": []}
-PLACEHOLDERS = ("TITLE", "CONFIG", "KARTEN", "PLAN", "LOOKUP", "BUILD")
+PLACEHOLDERS = ("TITLE", "CONFIG", "CARDS", "PLAN", "BUILD", "COVERAGE", "NOTES", "UI")
 PLACEHOLDER_RE = re.compile(r"/\*(" + "|".join(PLACEHOLDERS) + r")\*/")
 
 
@@ -49,10 +52,14 @@ def notes_head(notes_dir):
     return None if pathlib.Path(top).resolve() == HERE.parent.resolve() else git_head(notes_dir)
 
 
+def ui_languages():
+    return sorted(p.name[3:-5] for p in UI_DIR.glob("ui.*.json"))
+
+
 def check_exam(exam):
     """Schema check for exam.json; returns a list of error strings."""
     errors = []
-    for key in ("id", "title", "storage_key", "grading_prompt", "notes_dir"):
+    for key in ("id", "title", "storage_key", "grading_prompt", "notes_dir", "ui_language"):
         if not isinstance(exam.get(key), str) or not exam.get(key):
             errors.append(f"exam.{key}: missing or not a non-empty string")
     decks = exam.get("decks")
@@ -62,6 +69,13 @@ def check_exam(exam):
         errors.append("exam.decks: key 'alle' is reserved")
     if not isinstance(exam.get("languages"), list):
         errors.append("exam.languages: missing or not a list")
+    lang = exam.get("ui_language")
+    if isinstance(lang, str) and lang and lang not in ui_languages():
+        errors.append(f"exam.ui_language: '{lang}' has no {UI_DIR.name}/ui.{lang}.json (available: {', '.join(ui_languages())})")
+    tts = exam.get("tts")
+    if tts is not None and (not isinstance(tts, dict)
+                            or not all(isinstance(k, str) and isinstance(val, str) for k, val in tts.items())):
+        errors.append('exam.tts: must be an object mapping language code to BCP-47 tag, e.g. {"de": "de-DE"}')
     return errors
 
 
@@ -95,11 +109,16 @@ def main():
 
     say(f"2. validate           {len(cards)} cards: fields, decks, priorities, languages, resolvable src")
     errors = exam_errors + v.validate(cards, exam, coverage, notes_dir, sources_dir)
+    say(f"3. notes + coverage   render notes from {notes_dir}; count cards and notes per guide item")
+    notes, note_errors = notes_mod.load_notes(notes_dir, exam)
+    report, cov_errors = cov_mod.compute(coverage, cards, notes_dir)
+    errors += note_errors + cov_errors
     if errors:
         say("\n".join(errors))
         say(f"{len(errors)} error(s). Nothing written.")
         sys.exit(1)
 
+    ui = json.loads((UI_DIR / f"ui.{exam['ui_language']}.json").read_text(encoding="utf-8"))
     for c in cards:
         c.pop("_file", None)
     cards.sort(key=lambda c: c["p"])
@@ -108,8 +127,10 @@ def main():
     for c in cards:
         by_deck[c["deck"]] = by_deck.get(c["deck"], 0) + 1
     say(f"   ok: {len(cards)} cards, decks {by_deck}, model-knowledge cards: {model_cards}")
+    for line in cov_mod.summary_lines(report):
+        say(line)
     if a.check:
-        say("3. --check: done, nothing written")
+        say("4. --check: done, nothing written")
         return
 
     manifest = {
@@ -120,15 +141,17 @@ def main():
         "repo_head": git_head(HERE.parent), "notes_head": notes_head(notes_dir),
         "cards": len(cards), "by_deck": by_deck, "model_cards": model_cards,
         "by_priority": {p: sum(c["p"] == p for c in cards) for p in (1, 2, 3)},
+        "coverage": report["summary"],
     }
-    say("3. render             embed config, cards, plan, lookup and manifest into template")
+    say("4. render             embed config, UI strings, cards, plan, coverage, notes and manifest into template")
     html = render(TEMPLATE.read_text(encoding="utf-8"), {
-        "TITLE": html_mod.escape(f"{exam['title']} · Karteikasten"),
-        "CONFIG": jdump(exam), "KARTEN": jdump(cards), "PLAN": jdump(plan),
-        "LOOKUP": "null", "BUILD": jdump(manifest)})
+        "TITLE": html_mod.escape(f"{exam['title']} · {ui['title_suffix']}"),
+        "CONFIG": jdump(exam), "CARDS": jdump(cards), "PLAN": jdump(plan),
+        "BUILD": jdump(manifest),
+        "COVERAGE": jdump(report), "NOTES": jdump(notes), "UI": jdump(ui)})
 
     out = ex / "build"
-    say(f"4. write              {out/'index.html'} ({len(html)//1024} KB), build.json")
+    say(f"5. write              {out/'index.html'} ({len(html)//1024} KB), build.json")
     out.mkdir(exist_ok=True)
     (out / "index.html").write_text(html, encoding="utf-8")
     (out / "build.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
