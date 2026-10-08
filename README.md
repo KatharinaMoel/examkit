@@ -9,7 +9,8 @@ certification prep (AWS), shared in case it is useful.
 - **Engine/content split**: the engine is generic and public; exam content and
   sources live in `exams/<id>/`, which never enters this repository.
 - **Every card is sourced**: `build.py` refuses a card whose `src` does not
-  resolve to a guide item, a note heading or a source file.
+  resolve to a guide item, a note heading or a source file; source folders
+  can carry trust tiers (see Source tiers below).
 - **Model knowledge is visible**: cards that rest on an LLM's memory are
   marked as such, on the card and in the build summary.
 - **Explain-then-run**: the build prints each step with a one-line explanation.
@@ -29,6 +30,19 @@ certification prep (AWS), shared in case it is useful.
 
 The `example/` exam is built by GitHub Actions (`.github/workflows/demo.yml`) and published to this
 repository's GitHub Pages site on every push to `main`. Progress there lives only in your browser.
+
+## Source tiers
+
+`exam.json` may map each first-level folder of `sources/` to a trust tier:
+
+    "source_tiers": {"exam-guide": "primary", "classroom": "official", "podcasts": "hypothesis"}
+
+Once the key is set, a `source:<path>` src must live in a listed folder (`sources/<folder>/<file>`, no
+`./`, `../` or absolute paths), and only `primary` and `official` folders can back a card. A
+`hypothesis` source (podcasts, third-party courses) is refused: cite a primary/official source and
+mention the origin in `ctx`. Without the key, any existing file under `sources/` is accepted. The build
+summary and `build.json` (`by_tier`) count cards per tier (`guide`, `note`, and `source` when no tiers
+are set).
 
 ## Progress file
 

@@ -4,6 +4,12 @@ A card is accepted only if its ``src`` resolves to one of
   guide:<id>              an id in coverage.json (task, svc:, concept:)
   note:<slug>#<heading>   <notes_dir>/<slug>.md contains a heading line "#... <heading>"
   source:<path>           <sources_dir>/<path> exists
+
+Optional trust tiers (``exam.source_tiers``) map a first-level folder of
+``sources/`` to primary, official or hypothesis. When they are set, a
+``source:`` src must live in a listed folder whose tier is primary or
+official; hypothesis-tier material (podcasts, third-party courses) can
+never back a card.
 """
 import json
 import pathlib
@@ -12,6 +18,8 @@ import re
 REQUIRED = ("id", "deck", "q", "a", "key", "src", "p", "ctx", "ctx_src")
 CTX_SRC = {"note", "source", "guide", "model"}
 SRC_RE = re.compile(r"^(guide|note|source):(.+)$")
+TIERS = ("primary", "official", "hypothesis")
+CARD_TIERS = {"primary", "official"}
 
 
 def load_cards(cards_dir: pathlib.Path) -> list[dict]:
@@ -48,7 +56,62 @@ def _heading_in(note: pathlib.Path, heading: str) -> bool:
     return False
 
 
-def resolve_src(src, cov_ids, notes_dir, sources_dir):
+def check_source_tiers(tiers) -> list[str]:
+    """Schema check for exam.source_tiers (None means: not configured)."""
+    if tiers is None:
+        return []
+    if not isinstance(tiers, dict):
+        return ['exam.source_tiers: must be an object mapping a sources/ folder to '
+                f'one of {", ".join(TIERS)}, e.g. {{"exam-guide": "primary"}}']
+    errors = []
+    for folder, tier in tiers.items():
+        if not isinstance(folder, str) or folder.strip() in ("", ".", "..") or "/" in folder:
+            errors.append(f"exam.source_tiers: folder '{folder}' must be a first-level folder name (not empty, '.' or '..', no '/')")
+        if not isinstance(tier, str) or tier not in TIERS:
+            errors.append(f"exam.source_tiers: tier '{tier}' for folder '{folder}' must be one of {', '.join(TIERS)}")
+    return errors
+
+
+def _tier_error(src, rest, tiers):
+    """Tier check for an existing source:<rest>; returns an error string or None."""
+    parts = rest.split("/")
+    if rest.startswith("/") or pathlib.PurePath(rest).is_absolute() or any(x in (".", "..") for x in parts):
+        return f"src '{src}' must be a plain path below sources/<folder>/ (no ./, ../ or absolute paths that escape the tier folder)"
+    if "" in parts:
+        return f"src '{src}' has an empty path segment (trailing '/' or '//'); name a file as sources/<folder>/<file>"
+    if len(parts) < 2:
+        return f"src '{src}': the file must live in a tier folder (sources/<folder>/<file>), not directly in sources/"
+    folder = parts[0]
+    if folder not in tiers:
+        return f"src '{src}': folder '{folder}' has no tier; list it in exam.source_tiers"
+    tier = tiers[folder]
+    if tier == "hypothesis":
+        return (f"src '{src}' is hypothesis-tier ({folder}) and cannot back a card; "
+                "cite a primary/official source and mention the origin in ctx")
+    if tier not in CARD_TIERS:
+        return f"src '{src}': folder '{folder}' has invalid tier '{tier}'"
+    return None
+
+
+def _effective_tiers(tiers):
+    """Tiers the card check uses: None (not configured), the object, or {} for a broken config (fail closed)."""
+    if tiers is not None and not isinstance(tiers, dict):
+        return {}  # a broken tier config accepts no source: card
+    return tiers
+
+
+def source_tier(src, tiers) -> str:
+    """Bucket for the build summary: guide, note, the tier of a source: path, or source without tiers."""
+    m = SRC_RE.match(str(src))
+    if not m:
+        return "?"
+    kind, rest = m.groups()
+    if kind != "source" or tiers is None:
+        return kind
+    return tiers.get(rest.split("/", 1)[0], "?") if isinstance(tiers, dict) else "?"
+
+
+def resolve_src(src, cov_ids, notes_dir, sources_dir, *, source_tiers=None):
     m = SRC_RE.match(str(src))
     if not m:
         return f"src '{src}' must be guide:<id>, note:<slug>#<heading> or source:<path>"
@@ -66,7 +129,11 @@ def resolve_src(src, cov_ids, notes_dir, sources_dir):
             return f"src note: {note.name} has no heading '{heading}'"
         return None
     path = pathlib.Path(sources_dir) / rest
-    return None if path.exists() else f"src source: file {rest} not found under {sources_dir}"
+    if not path.exists():
+        return f"src source: file {rest} not found under {sources_dir}"
+    if source_tiers is None:
+        return None
+    return _tier_error(src, rest, source_tiers)
 
 
 def _is_str_list(value) -> bool:
@@ -81,6 +148,9 @@ def validate(cards, exam, coverage, notes_dir, sources_dir) -> list[str]:
     decks = set(exam.get("decks") or {})
     langs = set(exam.get("languages") or [])
     seen = {}
+    tiers = exam.get("source_tiers")
+    errors += check_source_tiers(tiers)
+    tiers = _effective_tiers(tiers)
     for n, c in enumerate(cards, 1):
         if not isinstance(c, dict):
             errors.append(f"card #{n} in ? is not an object")
@@ -127,7 +197,7 @@ def validate(cards, exam, coverage, notes_dir, sources_dir) -> list[str]:
             if not isinstance(c["src"], str):
                 errors.append(f"{label}: src '{c['src']}' must be guide:<id>, note:<slug>#<heading> or source:<path>")
             else:
-                msg = resolve_src(c["src"], cov_ids, notes_dir, sources_dir)
+                msg = resolve_src(c["src"], cov_ids, notes_dir, sources_dir, source_tiers=tiers)
                 if msg:
                     errors.append(f"{label}: {msg}")
     return errors

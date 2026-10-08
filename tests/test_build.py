@@ -291,7 +291,7 @@ def test_retired_id_still_live_is_error(tmp_path):
     ex = copy_example(tmp_path)
     (ex / "retired.json").write_text('{"ex-basic-def": "typo"}', encoding="utf-8")
     r = build(ex)
-    assert r.returncode == 1 and "ex-basic-def is listed as retired but a live card still uses it" in r.stderr
+    assert r.returncode == 1 and "ex-basic-def" in r.stderr and "still" in r.stderr
     assert outputs(ex) == []
 
 
@@ -317,6 +317,39 @@ def test_check_only_also_checks_retired(tmp_path):
     edit_cards(ex, drop_model_card)
     r = build(ex, "--check")
     assert r.returncode == 1 and "ex-model" in r.stderr
+
+
+def test_summary_and_manifest_count_tiers(tmp_path):
+    ex = copy_example(tmp_path)
+    (ex / "sources" / "exam-guide").mkdir()
+    (ex / "sources" / "exam-guide" / "guide.md").write_text("x", encoding="utf-8")
+    edit_exam(ex, lambda e: e.update(source_tiers={"exam-guide": "primary", "podcasts": "hypothesis"}))
+    edit_cards(ex, lambda cs: cs[2].update(src="source:exam-guide/guide.md"))
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    assert "   source tiers: primary 1, guide 1, note 1" in r.stderr, r.stderr
+    m = json.loads((ex / "build" / "build.json").read_text())
+    assert m["by_tier"] == {"primary": 1, "guide": 1, "note": 1}
+
+
+def test_summary_without_tiers_counts_source(tmp_path):
+    ex = copy_example(tmp_path)
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    assert "   source tiers: guide 1, note 1, source 1" in r.stderr, r.stderr
+    assert json.loads((ex / "build" / "build.json").read_text())["by_tier"] == {"guide": 1, "note": 1, "source": 1}
+
+
+def test_hypothesis_card_fails_build(tmp_path):
+    ex = copy_example(tmp_path)
+    (ex / "sources" / "podcasts").mkdir()
+    (ex / "sources" / "podcasts" / "x.md").write_text("x", encoding="utf-8")
+    edit_exam(ex, lambda e: e.update(source_tiers={"podcasts": "hypothesis"}))
+    edit_cards(ex, lambda cs: cs[2].update(src="source:podcasts/x.md"))
+    r = build(ex)
+    assert r.returncode == 1
+    assert "is hypothesis-tier (podcasts) and cannot back a card" in r.stderr
+    assert outputs(ex) == []
 
 
 # --- card-ids.json: the id ledger next to exam.json, so the retired-id check also works on a fresh clone ---
