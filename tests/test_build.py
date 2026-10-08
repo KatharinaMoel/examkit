@@ -165,6 +165,12 @@ def test_check_prints_coverage_summary(tmp_path):
     assert r.returncode == 0 and "coverage tasks" in r.stderr and outputs(ex) == []
 
 
+def test_step_two_names_the_id_ledger_on_one_line(tmp_path):
+    r = build(copy_example(tmp_path), "--check")
+    step2 = [line for line in (r.stdout + r.stderr).splitlines() if line.startswith("2. validate")]
+    assert len(step2) == 1 and "ids against card-ids.json, the previous build and retired.json" in step2[0], step2
+
+
 def test_note_covers_unknown_id_fails_build(tmp_path):
     ex = copy_example(tmp_path)
     (ex / "notes" / "extra.md").write_text("---\ncovers: [9.9]\n---\n# Extra\n", encoding="utf-8")

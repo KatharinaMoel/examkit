@@ -3,7 +3,9 @@
 A card is accepted only if its ``src`` resolves to one of
   guide:<id>              an id in coverage.json (task, svc:, concept:)
   note:<slug>#<heading>   <notes_dir>/<slug>.md contains a heading line "#... <heading>"
-  source:<path>           <sources_dir>/<path> exists
+  source:<path>           <sources_dir>/<path> is a file; a plain relative path
+                          (no ./, ../ or absolute path) whose resolved target
+                          (symlinks followed) stays inside sources/
 
 Optional trust tiers (``exam.source_tiers``) map a first-level folder of
 ``sources/`` to primary, official or hypothesis. When they are set, a
@@ -72,11 +74,21 @@ def check_source_tiers(tiers) -> list[str]:
     return errors
 
 
-def _tier_error(src, rest, tiers):
-    """Tier check for an existing source:<rest>; returns an error string or None."""
+def _escape_msg(src):
+    return f"src '{src}' must be a plain relative path inside sources/ (no ./, ../ or absolute paths, which escape sources/)"
+
+
+def _escape_error(src, rest):
+    """A source:<rest> must be a plain relative path: no ./, ../ or absolute path. Error string or None."""
     parts = rest.split("/")
     if rest.startswith("/") or pathlib.PurePath(rest).is_absolute() or any(x in (".", "..") for x in parts):
-        return f"src '{src}' must be a plain path below sources/<folder>/ (no ./, ../ or absolute paths that escape the tier folder)"
+        return _escape_msg(src)
+    return None
+
+
+def _tier_error(src, rest, tiers):
+    """Tier check for an existing, non-escaping source:<rest>; returns an error string or None."""
+    parts = rest.split("/")
     if "" in parts:
         return f"src '{src}' has an empty path segment (trailing '/' or '//'); name a file as sources/<folder>/<file>"
     if len(parts) < 2:
@@ -128,12 +140,21 @@ def resolve_src(src, cov_ids, notes_dir, sources_dir, *, source_tiers=None):
         if not _heading_in(note, heading):
             return f"src note: {note.name} has no heading '{heading}'"
         return None
+    escape = _escape_error(src, rest)
+    if escape:
+        return escape  # checked first: with or without tiers, a source: path never leaves sources/
     path = pathlib.Path(sources_dir) / rest
     if not path.exists():
         return f"src source: file {rest} not found under {sources_dir}"
-    if source_tiers is None:
-        return None
-    return _tier_error(src, rest, source_tiers)
+    if not path.resolve().is_relative_to(pathlib.Path(sources_dir).resolve()):
+        return _escape_msg(src)  # a symlink inside sources/ that points outside
+    if source_tiers is not None:
+        tier_error = _tier_error(src, rest, source_tiers)
+        if tier_error:
+            return tier_error  # more specific for a trailing '/' or a bare folder
+    if not path.is_file():
+        return f"src '{src}' is a directory, not a file"
+    return None
 
 
 def _is_str_list(value) -> bool:

@@ -40,7 +40,9 @@ repository's GitHub Pages site on every push to `main`. Progress there lives onl
 Once the key is set, a `source:<path>` src must live in a listed folder (`sources/<folder>/<file>`, no
 `./`, `../` or absolute paths), and only `primary` and `official` folders can back a card. A
 `hypothesis` source (podcasts, third-party courses) is refused: cite a primary/official source and
-mention the origin in `ctx`. Without the key, any existing file under `sources/` is accepted. The build
+mention the origin in `ctx`. Without the key, any existing file under `sources/` is accepted. With or
+without the key, a `source:` must be a file (not a directory) given as a plain relative path: `./`, `../`,
+absolute paths and symlinks that point outside `sources/` are always refused. The build
 summary and `build.json` (`by_tier`) count cards per tier (`guide`, `note`, and `source` when no tiers
 are set).
 

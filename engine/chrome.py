@@ -22,6 +22,7 @@ import shlex
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 
 FLATPAK_ID = "com.google.Chrome"
@@ -75,8 +76,23 @@ def _profile(profile_dir):
         d.mkdir(parents=True, exist_ok=True)
         yield d
         return
-    with tempfile.TemporaryDirectory(prefix="examkit-chrome-", ignore_cleanup_errors=True) as d:
-        yield pathlib.Path(d).resolve()
+    with temporary_profile() as d:
+        yield d
+
+
+@contextlib.contextmanager
+def temporary_profile():
+    """A fresh Chrome profile directory, removed on exit (also on errors); a failed removal is reported."""
+    d = pathlib.Path(tempfile.mkdtemp(prefix="examkit-chrome-")).resolve()
+    try:
+        yield d
+    finally:
+        # Not hidden: a Chrome child still writing after exit can keep the profile alive,
+        # and silent leftovers would pile up in the temp directory.
+        try:
+            shutil.rmtree(d)
+        except OSError as e:
+            print(f"  ! temporary Chrome profile {d} could not be removed ({e}); delete it by hand", file=sys.stderr)
 
 
 def dump_dom(html_path, profile_dir=None, budget_ms=3000, timeout=90):

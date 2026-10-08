@@ -19,7 +19,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import urllib.parse
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -213,7 +212,7 @@ def main():
         return
     with_mermaid = [(f, label) for f, label in written if MERMAID_BLOCK_RE.search(f.read_text(encoding="utf-8"))]
     # One Chrome profile per run, in a temporary directory that is removed afterwards, also on errors.
-    with tempfile.TemporaryDirectory(prefix="examkit-chrome-", ignore_cleanup_errors=True) as profile:
+    with chrome_mod.temporary_profile() as profile:
         try:
             say(f"3. print pdf          {len(written)} pages through headless Chrome, {a.budget_ms} ms page time each")
             for f, _ in written:
