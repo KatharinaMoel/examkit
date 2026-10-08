@@ -34,8 +34,21 @@ repository's GitHub Pages site on every push to `main`. Progress there lives onl
 
 "Save progress" writes a JSON file with every grade, the history and the plan ticks; "Load progress"
 merges such a file into the current state (per card the newer grade wins). Card ids are permanent:
-`build.py` refuses a build whose previous `build.json` lists an id that is gone unless `retired.json`
-names it with a reason.
+every real build records all ids ever built in `card-ids.json` next to `exam.json` (keep it with
+the cards; `--check` never writes it), and `build.py` refuses a build when an id from that file or
+from the previous `build.json` is gone unless `retired.json` names it with a reason. An id that was
+never published (say a draft built once locally) may be removed from `card-ids.json` by hand; the
+cost is that the retired check no longer knows that id, so it can come back with other content.
+
+## Print pack
+
+`engine/print.py` writes one HTML page and PDF per note plus `00-complete` into `build/print/`.
+Images a note references by a relative path (inside the notes directory) are copied to
+`build/print/assets/<slug>/` (file names carry a short hash of the source path); a missing or
+outside image is a warning. After printing, every page with a Mermaid diagram is loaded again: if
+a diagram has no rendered `<svg>` (mermaid.js did not load, e.g. offline), the run names the note
+and exits 1. `--html-only` skips Chrome and this check.
+Chrome runs with a temporary profile and is killed with all its processes on a timeout.
 
 ## Status
 
