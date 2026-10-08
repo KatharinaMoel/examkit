@@ -130,3 +130,107 @@ def test_null_languages_and_decks_do_not_crash():
     _, _, cards = load()
     msgs = run(cards, exam={"decks": None, "languages": None})
     assert any("deck" in m for m in msgs)
+
+
+# --- source tiers -----------------------------------------------------------
+
+TIERS = {"exam-guide": "primary", "classroom": "official", "podcasts": "hypothesis"}
+
+
+def _tiered_sources(tmp_path):
+    src = tmp_path / "sources"
+    for rel in ("exam-guide/guide.md", "classroom/lesson.md", "podcasts/x.md", "unlisted/y.md", "loose.md"):
+        (src / rel).parent.mkdir(parents=True, exist_ok=True)
+        (src / rel).write_text("x", encoding="utf-8")
+    (tmp_path / "outside.md").write_text("x", encoding="utf-8")
+    return src
+
+
+def _tiered(tmp_path, src, tiers=TIERS):
+    """Validate the example cards with card #3 pointing at ``src`` under tiered sources."""
+    exam, cov, cards = load()
+    exam = dict(exam, source_tiers=tiers)
+    bad = copy.deepcopy(cards)
+    bad[2]["src"] = src
+    return v.validate(bad, exam, cov, EX / "notes", _tiered_sources(tmp_path))
+
+
+def test_tier_primary_and_official_accepted(tmp_path):
+    assert _tiered(tmp_path, "source:exam-guide/guide.md") == []
+    assert _tiered(tmp_path, "source:classroom/lesson.md") == []
+
+
+def test_tier_hypothesis_rejected(tmp_path):
+    msgs = _tiered(tmp_path, "source:podcasts/x.md")
+    assert any("src 'source:podcasts/x.md' is hypothesis-tier (podcasts) and cannot back a card; "
+               "cite a primary/official source and mention the origin in ctx" in m for m in msgs), msgs
+
+
+def test_tier_unknown_folder_rejected(tmp_path):
+    msgs = _tiered(tmp_path, "source:unlisted/y.md")
+    assert any("unlisted" in m and "exam.source_tiers" in m for m in msgs), msgs
+
+
+def test_tier_file_without_folder_rejected(tmp_path):
+    msgs = _tiered(tmp_path, "source:loose.md")
+    assert any("loose.md" in m and "tier folder" in m for m in msgs), msgs
+
+
+def test_tier_escaping_paths_rejected(tmp_path):
+    for src in ("source:../outside.md", "source:./exam-guide/guide.md",
+                "source:podcasts/../exam-guide/guide.md", f"source:{tmp_path / 'outside.md'}"):
+        msgs = _tiered(tmp_path, src)
+        assert any(src in m and "escape" in m for m in msgs), (src, msgs)
+
+
+def test_tier_missing_file_still_reported(tmp_path):
+    msgs = _tiered(tmp_path, "source:exam-guide/nope.md")
+    assert any("nope.md" in m and "not found" in m for m in msgs), msgs
+
+
+def test_without_tiers_old_behaviour(tmp_path):
+    # no source_tiers: a loose file and even a podcast file are accepted as before
+    _tiered_sources(tmp_path)
+    assert v.resolve_src("source:loose.md", set(), EX / "notes", tmp_path / "sources") is None
+    assert v.resolve_src("source:podcasts/x.md", set(), EX / "notes", tmp_path / "sources") is None
+    exam, _, _ = load()
+    assert "source_tiers" not in exam
+
+
+def test_invalid_source_tiers_rejected(tmp_path):
+    # the card cites a guide id, so each case plants exactly one error: the config error
+    cases = [
+        (["podcasts"], "exam.source_tiers: must be an object"),
+        ({"podcasts": "secondary"}, "'podcasts'"),
+        ({"podcasts": 1}, "'podcasts'"),
+        ({"a/b": "primary"}, "'a/b'"),
+        ({"": "primary"}, "''"),
+        ({".": "primary"}, "'.'"),
+        ({"..": "primary"}, "'..'"),
+        ({"  ": "primary"}, "'  '"),
+    ]
+    for tiers, needle in cases:
+        msgs = _tiered(tmp_path, "guide:svc:thing", tiers=tiers)
+        assert len(msgs) == 1 and "exam.source_tiers" in msgs[0] and needle in msgs[0], (tiers, msgs)
+    # a valid object produces no config error
+    assert _tiered(tmp_path, "guide:svc:thing") == []
+
+
+def test_broken_tiers_config_rejects_source_cards(tmp_path):
+    # fail closed: a source_tiers that is not an object must not reopen the door for source: cards
+    msgs = _tiered(tmp_path, "source:exam-guide/guide.md", tiers=["exam-guide"])
+    assert any("source:exam-guide/guide.md" in m and "exam.source_tiers" in m for m in msgs), msgs
+
+
+def test_tier_empty_segment_named(tmp_path):
+    for src in ("source:exam-guide/", "source:exam-guide//guide.md"):
+        msgs = _tiered(tmp_path, src)
+        assert any(src in m and "empty path segment" in m for m in msgs), (src, msgs)
+
+
+def test_source_tier_of():
+    assert v.source_tier("guide:1.1", TIERS) == "guide"
+    assert v.source_tier("note:intro#X", TIERS) == "note"
+    assert v.source_tier("source:exam-guide/guide.md", TIERS) == "primary"
+    assert v.source_tier("source:classroom/lesson.md", TIERS) == "official"
+    assert v.source_tier("source:dummy.md", None) == "source"

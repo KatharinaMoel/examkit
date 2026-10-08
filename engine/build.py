@@ -103,6 +103,18 @@ def check_retired(exam_dir, cards, previous_manifest):
     return errors
 
 
+TIER_ORDER = ("primary", "official", "guide", "note", "source")
+
+
+def tier_counts(cards, source_tiers):
+    """Cards per trust bucket (primary/official by source tier, guide, note, source without tiers); non-zero only."""
+    counts = {}
+    for c in cards:
+        t = v.source_tier(c["src"], source_tiers)
+        counts[t] = counts.get(t, 0) + 1
+    return {t: counts[t] for t in sorted(counts, key=lambda t: (TIER_ORDER.index(t) if t in TIER_ORDER else len(TIER_ORDER), t))}
+
+
 def render(template, values):
     """Substitute every placeholder in one pass, so placeholder text inside data stays untouched."""
     for name in PLACEHOLDERS:
@@ -139,7 +151,7 @@ def main():
         except ValueError:
             say("   note: previous build.json unreadable, id check skipped")
 
-    say(f"2. validate           {len(cards)} cards: fields, decks, priorities, languages, resolvable src; ids against the previous build and retired.json")
+    say(f"2. validate           {len(cards)} cards: fields, decks, priorities, languages, resolvable src, source tiers; ids against the previous build and retired.json")
     errors = exam_errors + v.validate(cards, exam, coverage, notes_dir, sources_dir) + check_retired(ex, cards, previous)
     say(f"3. notes + coverage   render notes from {notes_dir}; count cards and notes per guide item")
     notes, note_errors = notes_mod.load_notes(notes_dir, exam)
@@ -159,6 +171,8 @@ def main():
     for c in cards:
         by_deck[c["deck"]] = by_deck.get(c["deck"], 0) + 1
     say(f"   ok: {len(cards)} cards, decks {by_deck}, model-knowledge cards: {model_cards}")
+    by_tier = tier_counts(cards, exam.get("source_tiers"))
+    say("   source tiers: " + ", ".join(f"{t} {n}" for t, n in by_tier.items()))
     for line in cov_mod.summary_lines(report):
         say(line)
     if a.check:
@@ -172,6 +186,7 @@ def main():
         # (e.g. example/notes) that would be examkit's own HEAD, so it is reported as None.
         "repo_head": git_head(HERE.parent), "notes_head": notes_head(notes_dir),
         "cards": len(cards), "ids": sorted(c["id"] for c in cards), "by_deck": by_deck, "model_cards": model_cards,
+        "by_tier": by_tier,
         "by_priority": {p: sum(c["p"] == p for c in cards) for p in (1, 2, 3)},
         "coverage": report["summary"],
     }

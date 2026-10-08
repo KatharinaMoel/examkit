@@ -7,6 +7,9 @@ Read this first; it replaces a hand-over. Project rules in short:
 - **Every card is sourced.** `engine/build.py` refuses a card whose `src` does not
   resolve (`guide:<id>` from coverage.json, `note:<slug>#<heading>`, `source:<path>`).
   Model knowledge is allowed only as `ctx_src: "model"` and is counted and shown.
+- **Source tiers.** Optional `exam.json.source_tiers` maps each `sources/<folder>` to
+  `primary`, `official` or `hypothesis`; when set, a `source:` src must sit in a listed
+  folder and a `hypothesis` folder can never back a card (`engine/validate.py`).
 - **No agent commits or pushes.** Explain the state, list files, propose a commit
   message; the owner commits. Never run git commands that change state.
 - **Explain-then-run.** Scripts print each step with a one-line explanation.
@@ -18,7 +21,7 @@ Read this first; it replaces a hand-over. Project rules in short:
 
 | Path | What |
 |---|---|
-| `engine/validate.py` | card validation (fields, decks, priorities, languages, covers, resolvable src) |
+| `engine/validate.py` | card validation (fields, decks, priorities, languages, covers, resolvable src, source tiers) |
 | `engine/build.py` | `python3 engine/build.py <exam_dir> [--check]` → `<exam_dir>/build/index.html` + `build.json`; prints a coverage summary |
 | `engine/notes.py` | frontmatter, Markdown → HTML (python-markdown), Mermaid kept for the browser, note list from `exam.json.notes` |
 | `engine/coverage.py` | cards (`covers`) and notes (frontmatter `covers`) per guide item; green/yellow/red |
@@ -34,13 +37,13 @@ Read this first; it replaces a hand-over. Project rules in short:
 | `exams/<id>/AGENTS.md` | per-exam hand-over (goal, deadline, state, publish URL) — read it when working on that exam |
 | `docs/superpowers/` | spec and plans (local only, git-ignored); if absent, the README "Status" section is the summary |
 
-## Current state (2026-10-07, end of Session 2b)
+## Current state (2026-10-08, after Session 3)
 
 Done: validator, build CLI, config-driven template, example, README (Session 1); coverage tab,
 notes tab (Markdown + Mermaid on demand), UI language files de/en, hardening (Session 2a);
 progress export/import (JSON file, newer grade wins per card), `retired.json` for card ids
 (`build.json` lists all `ids`), browser smoke test, print pack (`engine/print.py`), tracked-path check
-and GitHub Actions workflow for the Pages demo (Session 2b). 108 tests. Repo `KatharinaMoel/examkit`,
+and GitHub Actions workflow for the Pages demo (Session 2b); source tiers in the validator (`exam.json.source_tiers`: primary / official / hypothesis, hypothesis never backs a card; Session 3). 122 tests. Repo `KatharinaMoel/examkit`,
 demo live at <https://katharinamoel.github.io/examkit/> (first workflow run 2026-10-07 passed). Install:
 `python3 -m pip install --user -r requirements.txt`.
 First exam `exams/aws-clf-c02` is live as a private claude.ai artifact (coverage + notes tabs).
@@ -58,7 +61,7 @@ smoke test uses an in-page error listener (see the docstring in `engine/chrome.p
 Next:
 1. AIF-C01 exam migrated into examkit as the second exam (after the CLF exam).
 2. Decide whether to publish the static CLF page (after the exam).
-3. First real feeding run for the CLF exam through the generic runbook (`~/ki-os/40-runbooks/kursmaterial-gegen-wissensbasis-abgleichen.md`, vault guide `~/ki-os/20-knowledge/anleitungen/lernkasten-fuettern.md`, both written 2026-10-07, runbook stays `entwurf` until that run). Service coverage goes into a separate services note (decided for the CLF exam, see `exams/aws-clf-c02/AGENTS.md`).
+3. First real feeding run for the CLF exam through the generic runbook (`~/ki-os/40-runbooks/kursmaterial-gegen-wissensbasis-abgleichen.md`, vault guide `~/ki-os/20-knowledge/anleitungen/lernkasten-fuettern.md`; runbook stays `entwurf` until that run) with the owner's classroom screenshots. Done in Session 3 without the owner: services note `05-dienste.md` (111 services, every quote checked against `sources/aws-docs/`), services coverage 57 green / 54 yellow / 0 red; yellow = note but no card. Podcast transcripts come from the toolkit tool `media/transcribe` (publisher transcripts first, Whisper fallback) into `exams/<id>/sources/podcasts/` (tier hypothesis).
 4. Leftovers: the print pack shows a visible warning when mermaid.js fails to load but does not fail the run (consider a DOM check after printing); the Chrome profile lives in `build/print/.chrome-profile`; the retired-id check compares against the local previous `build/build.json`, not the last commit (vacuous on a fresh clone); relative images in notes do not reach the print pack; `check_tracked.py` and the smoke harness have the small test gaps listed in the Session 2b ledger.
 
 Before starting any of this: run the tests, then `python3 engine/build.py example`.
