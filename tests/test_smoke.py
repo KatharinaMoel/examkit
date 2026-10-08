@@ -207,3 +207,99 @@ def test_import_filters_history_and_plan_entries(tmp_path, built):
     assert [h["id"] for h in e["hist"]] == ["ex-model"]
     assert sorted(e["plan"]) == ["day1", "day4"]
     assert json.loads(got["errors"]) == []
+
+
+def test_report_block_on_front_and_back(tmp_path, built):
+    """The learner spots unsuitable cards before answering, so the feedback block sits on both sides."""
+    html, _ = built
+    js = """
+    const st = document.getElementById('stage');
+    const rep = () => st.querySelector('details.report');
+    d.dataset.front = String(!!st.querySelector('#ans') && !!rep() && !!st.querySelector('#rep') && !!st.querySelector('#repsend'));
+    d.dataset.marker = rep() ? rep().querySelector('summary').textContent : '';
+    d.dataset.tap = rep() ? Math.round(rep().querySelector('summary').getBoundingClientRect().height) : 0;
+    const r0 = document.getElementById('rep'); if(r0) r0.value = 'draft from the front';
+    document.getElementById('flip').click();
+    d.dataset.back = String(!!st.querySelector('.back details.report') && !!st.querySelector('#rep') && !st.querySelector('#ans'));
+    d.dataset.draft = (document.getElementById('rep')||{}).value || '';
+    d.dataset.reps = st.querySelectorAll('#rep').length;
+    """
+    got = smoke(tmp_path, html, extra_js=js)
+    assert got["front"] == "true", "report block missing on the front of the card"
+    assert got["marker"].startswith("✎ ")
+    assert int(got["tap"]) >= 44, "summary tap target below 44px"
+    assert got["back"] == "true", "report block missing on the back of the card"
+    assert got["draft"] == "draft from the front"
+    assert got["reps"] == "1"
+    assert json.loads(got["errors"]) == []
+
+
+def test_report_draft_stays_with_its_card(tmp_path, built):
+    """A note typed on card A must not show up on card B after "later"."""
+    html, _ = built
+    js = """
+    const box = () => document.querySelector('#stage details.report');
+    d.dataset.a = box().dataset.card;
+    box().open = true; document.getElementById('rep').value = 'note for card A';
+    document.getElementById('skip').click();
+    d.dataset.b = box().dataset.card;
+    d.dataset.draft = document.getElementById('rep').value;
+    d.dataset.open = String(box().open);
+    """
+    got = smoke(tmp_path, html, extra_js=js)
+    assert got["a"] and got["b"] and got["a"] != got["b"]
+    assert got["draft"] == "" and got["open"] == "false"
+    assert json.loads(got["errors"]) == []
+
+
+def test_report_without_db_says_so_on_the_front(tmp_path, built):
+    """The local page has no database: sending from the front shows report_nodb and keeps the text."""
+    html, _ = built
+    js = """
+    document.getElementById('rep').value = 'unsuitable question';
+    document.getElementById('repsend').click();
+    d.dataset.state = document.getElementById('repstate').textContent;
+    d.dataset.want = T('report_nodb');
+    d.dataset.front = String(!!document.getElementById('ans'));
+    d.dataset.text = document.getElementById('rep').value;
+    """
+    got = smoke(tmp_path, html, extra_js=js)
+    assert got["front"] == "true"
+    assert got["want"] and got["state"] == got["want"]
+    assert got["text"] == "unsuitable question"
+    assert json.loads(got["errors"]) == []
+
+
+# Fake claude runtime: a database whose feedback add() stays pending until window.__release() is called
+FAKE_DB = """<script>window.__sent = []; window.__release = null;
+const __doc = {get: async () => ({exists: false, data: () => ({})}), set: async () => {}, update: async () => {}, onSnapshot: () => () => {}};
+window.claude = {use: async n => n === 'db' ? {doc: () => __doc,
+  collection: name => ({add: doc => { __sent.push([name, doc]); return new Promise(r => window.__release = r); }})} : null};
+</script>"""
+
+
+def test_report_in_flight_does_not_touch_the_next_card(tmp_path, built):
+    """A send still awaiting the database must not clear or write into the next card's block."""
+    html, _ = built
+    js = """
+    document.getElementById('rep').value = 'note for card A';
+    document.getElementById('repsend').click();
+    d.dataset.saving = document.getElementById('repstate').textContent;
+    d.dataset.wantsaving = T('report_saving');
+    document.getElementById('skip').click();
+    document.getElementById('rep').value = 'draft on card B';
+    window.__release();
+    setTimeout(() => {
+      d.dataset.draft = document.getElementById('rep').value;
+      d.dataset.state = document.getElementById('repstate').textContent;
+      d.dataset.disabled = String(document.getElementById('repsend').disabled);
+      d.dataset.sent = JSON.stringify(__sent.map(([n, doc]) => [n, Object.keys(doc).sort(), doc.status, doc.text]));
+      d.dataset.done = '1';
+    }, 50);
+    """
+    got = smoke(tmp_path, html.replace(CHARSET, CHARSET + FAKE_DB, 1), extra_js=js)
+    assert got["saving"] == got["wantsaving"], "fake database not picked up: the send never started"
+    assert got.get("done") == "1"
+    assert got["draft"] == "draft on card B" and got["state"] == "" and got["disabled"] == "false"
+    assert json.loads(got["sent"]) == [["feedback", ["id", "q", "status", "t", "text"], "offen", "note for card A"]]
+    assert json.loads(got["errors"]) == []

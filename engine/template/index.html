@@ -76,7 +76,7 @@ textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outl
 .solution .more{font:inherit;font-size:14.5px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;align-self:flex-start}
 .tagrow{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--muted)}.tag{font:inherit;font-size:13.5px;background:none;border:1px dashed var(--line);border-radius:999px;padding:3px 10px;color:var(--muted);cursor:pointer}.tag[aria-pressed="true"]{border-style:solid;border-color:var(--accent);color:var(--accent);font-weight:700}
 .hitem{display:flex;flex-direction:column;gap:4px;padding:8px 0;border-top:1px solid var(--rule)}.hq{font-size:14px;color:var(--ink)}#hist{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px 12px}
-.report{font-size:14px;color:var(--muted)}.report summary{cursor:pointer;padding:6px 0}.report textarea{min-height:64px;font-size:16px;margin:6px 0}.repstate{font-size:13.5px}
+.report{font-size:14px;color:var(--muted);border-top:1px solid var(--rule);margin-top:4px}.report summary{cursor:pointer;padding:12px 0;min-height:44px;box-sizing:border-box;color:var(--accent)}.report textarea{min-height:64px;font-size:16px;margin:6px 0}.repstate{font-size:13.5px}
 .solution .src{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .solution .unsure{background:var(--mid-soft);color:var(--ink);border-radius:8px;padding:6px 10px;font-size:14.5px;white-space:pre-line}
 footer.build{max-width:560px;margin:14px auto 0;font-family:var(--mono);font-size:11px;color:var(--muted)}
@@ -485,7 +485,8 @@ function render(){
       <textarea id="ans" placeholder="${esc(T('answer_placeholder'))}"></textarea>
       <div class="row"><button class="btn" id="flip">${T('flip')}</button>
       ${sample && !aiOff ? `<button class="btn primary" id="check">${T('check')}</button>`:''}</div>
-      <div class="row"><button class="btn" id="speak" type="button">${T('speak')}</button><button class="btn" id="skip" type="button">${T('later')}</button></div></div>`;
+      <div class="row"><button class="btn" id="speak" type="button">${T('speak')}</button><button class="btn" id="skip" type="button">${T('later')}</button></div></div>
+      ${reportBlock(c)}`;
   } else {
     const v = ui.verdict;
     html += `<div class="back">`;
@@ -502,12 +503,11 @@ function render(){
         <button class="btn g-ok ${v&&v.urteil==='richtig'?'sug':''}" data-g="2">${T('grade_2')}</button>
       </div>
       <div class="tagrow"><span>${T('relevance')}</span><button type="button" class="tag" data-u="hoch" aria-pressed="${S.u==='hoch'}">${T('tag_high')}</button><button type="button" class="tag" data-u="niedrig" aria-pressed="${S.u==='niedrig'}">${T('tag_low')}</button></div>
-      <details class="report"><summary>${T('report_summary')}</summary>
-        <textarea id="rep" placeholder="${esc(T('report_placeholder'))}"></textarea>
-        <div class="row"><button class="btn" id="repsend" type="button">${T('report_send')}</button></div>
-        <span class="repstate" id="repstate"></span></details></div>`;
+      ${reportBlock(c)}</div>`;
   }
+  const draft = reportDraft(c);
   s.innerHTML = html;
+  wireReport(c, draft);
   if(!ui.revealed){
     $('flip').onclick = ()=>{ ui.revealed=true; render(); };
     $('skip').onclick = ()=>later(c);
@@ -516,7 +516,6 @@ function render(){
   } else {
     s.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>grade(c, +b.dataset.g));
     s.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>tag(c, b.dataset.u));
-    $('repsend').onclick = ()=>report(c);
     const rn = $('readnote'); if(rn) rn.onclick = ()=>{ const r = noteRef(c.src); window.examkitNote(r.slug, r.heading); };
   }
 }
@@ -775,17 +774,41 @@ function regrade(i, g){
 }
 $('histbtn').onclick = ()=>{ const box = $('hist'); box.hidden = !box.hidden; if(!box.hidden) renderHist(); };
 
-// Note on a card: goes to the database (collection "feedback"), Claude reads it in the next session
+// Note on a card: goes to the database (collection "feedback"), Claude reads it in the next session.
+// Rendered on both sides (unsuitable cards show up before answering); only one side exists at a time, so the ids stay unique.
+function reportBlock(c){
+  return `<details class="report" data-card="${esc(c.id)}"><summary>\u270e ${T('report_summary')}</summary>
+        <textarea id="rep" placeholder="${esc(T('report_placeholder'))}"></textarea>
+        <div class="row"><button class="btn" id="repsend" type="button">${T('report_send')}</button></div>
+        <span class="repstate" id="repstate"></span></details>`;
+}
+// An unsent note survives re-renders of the same card (flip, AI check): read it before the stage is replaced
+function reportDraft(c){
+  const box = document.querySelector('#stage details.report');
+  if(!box || box.dataset.card !== c.id) return null;
+  return {text: $('rep').value, open: box.open};
+}
+function wireReport(c, draft){
+  $('repsend').onclick = ()=>report(c);
+  if(draft && (draft.text || draft.open)){ $('rep').value = draft.text; document.querySelector('#stage details.report').open = true; }
+}
+// While a send is in flight the stage may be re-rendered: after the await only a block of the SAME card
+// (the current one, else the captured, now detached one) is touched, so the next card's draft stays intact.
 async function report(c){
-  const text = $('rep').value.trim(), out = $('repstate');
+  const ta = $('rep'), btn = $('repsend'), out = $('repstate'), text = ta.value.trim();
   if(!text){ out.textContent = T('report_empty'); return; }
   if(!db){ out.textContent = T('report_nodb'); return; }
-  $('repsend').disabled = true; out.textContent = T('report_saving');
+  btn.disabled = true; out.textContent = T('report_saving');
+  let msg;
   try{
     await db.collection('feedback').add({id: c.id, q: c.q, text, status: 'offen', t: Date.now()});
-    $('rep').value = ''; out.textContent = T('report_saved');
-  }catch(e){ out.textContent = T('report_failed'); }
-  $('repsend').disabled = false;
+    msg = T('report_saved');
+  }catch(e){ msg = T('report_failed'); }
+  const box = document.querySelector('#stage details.report');
+  const same = box && box.dataset.card === c.id && box.querySelector('#rep') !== ta;
+  const [ta2, btn2, out2] = same ? [box.querySelector('#rep'), box.querySelector('#repsend'), box.querySelector('#repstate')] : [ta, btn, out];
+  if(msg === T('report_saved') && ta2.value.trim() === text) ta2.value = '';
+  out2.textContent = msg; btn.disabled = false; btn2.disabled = false;
 }
 
 // Set a relevance label or (second click) remove it again; "" = neutral, so that update() overwrites it safely
