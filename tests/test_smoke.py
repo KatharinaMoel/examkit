@@ -178,3 +178,32 @@ def test_notes_search_hides_group_label_when_no_link_is_left(tmp_path, built):
     """
     got = smoke(tmp_path, html, extra_js=js)
     assert got["grpall"] == "1" and got["grpoff"] == "1" and got["grpafter"] == "0"
+
+
+def test_import_newer_grade_overwrites_existing_card(tmp_path, built):
+    html, _ = built
+    js = PROGRESS + """
+    window.examkitImport(P({'ex-basic-def': {b:1, r:1, w:0, t:1, k:1, dn:3}}));
+    window.examkitImport(P({'ex-basic-def': {b:3, r:3, w:0, t:9, k:3, dn:20}}));
+    d.dataset.export = JSON.stringify(window.examkitExport());
+    """
+    got = smoke(tmp_path, html, extra_js=js)
+    assert json.loads(got["export"])["cards"]["ex-basic-def"]["b"] == 3
+    assert json.loads(got["errors"]) == []
+
+
+def test_import_filters_history_and_plan_entries(tmp_path, built):
+    html, _ = built
+    js = PROGRESS + """
+    const p = P({});
+    p.hist = [{id: 'ex-model', g: 'richtig', t: 5}, {id: 3, t: 1}, null, {id: 'ex-svc-thing'}, 'junk', {id: 'ex-basic-def', t: '7'}];
+    p.plan = {day1: true, day2: false, day3: 0, day4: 1};
+    d.dataset.result = JSON.stringify(window.examkitImport(p));
+    d.dataset.export = JSON.stringify(window.examkitExport());
+    """
+    got = smoke(tmp_path, html, extra_js=js)
+    assert json.loads(got["result"]) == {"ok": True, "cards": 0}
+    e = json.loads(got["export"])
+    assert [h["id"] for h in e["hist"]] == ["ex-model"]
+    assert sorted(e["plan"]) == ["day1", "day4"]
+    assert json.loads(got["errors"]) == []

@@ -8,6 +8,7 @@ import argparse
 import datetime
 import html as html_mod
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -79,11 +80,57 @@ def check_exam(exam):
     return errors
 
 
-def check_retired(exam_dir, cards, previous_manifest):
-    """Card ids are permanent: an id from the previous build that is gone must be listed in retired.json.
+LEDGER = "card-ids.json"
 
+
+def load_ledger(exam_dir):
+    """Ids of every card ever built successfully, from <exam_dir>/card-ids.json. Returns (ids, errors).
+
+    The ledger sits next to exam.json (not in build/), so it travels with the cards and the
+    retired-id check also works on a fresh clone. A missing file is an empty ledger.
+    """
+    f = exam_dir / LEDGER
+    if not f.exists():
+        return set(), []
+    repair = (f"repair {f} by hand: it must be a JSON list of card id strings, e.g. [\"id-a\", \"id-b\"] "
+              "(the next real build adds the current ids again)")
+    try:
+        ids = json.loads(f.read_text(encoding="utf-8"))
+    except ValueError as e:
+        return set(), [f"{LEDGER}: not valid JSON ({e}); {repair}"]
+    if not isinstance(ids, list):
+        return set(), [f"{LEDGER}: not a list; {repair}"]
+    bad = [i for i in ids if not isinstance(i, str)]
+    if bad:
+        return set(), [f"{LEDGER}: {len(bad)} entries are not strings ({', '.join(map(repr, bad[:5]))}); {repair}"]
+    return set(ids), []
+
+
+def write_ledger(exam_dir, previous_manifest, ids):
+    """Add `ids` (and the previous build's ids) to card-ids.json, atomically: temp file, then os.replace."""
+    ledger, _ = load_ledger(exam_dir)
+    f = exam_dir / LEDGER
+    tmp = f.with_name(f.name + ".tmp")
+    tmp.write_text(json.dumps(sorted(known_ids(ledger, previous_manifest) | set(ids)), ensure_ascii=False, indent=1) + "\n",
+                   encoding="utf-8")
+    os.replace(tmp, f)
+
+
+def known_ids(ledger, previous_manifest):
+    """Union of the ledger and the previous build's ids; non-string entries are dropped."""
+    previous = previous_manifest.get("ids") if isinstance(previous_manifest, dict) else None
+    return set(ledger) | {i for i in (previous if isinstance(previous, list) else []) if isinstance(i, str)}
+
+
+def check_retired(exam_dir, cards, previous_manifest):
+    """Card ids are permanent: a known id that is gone must be listed in retired.json.
+
+    Known ids are those in card-ids.json (see load_ledger) and in the previous build.json.
     retired.json is {"<card id>": "<reason>"}. Returns a list of error strings.
     """
+    ledger, ledger_errors = load_ledger(exam_dir)
+    if ledger_errors:
+        return ledger_errors
     retired_file = exam_dir / "retired.json"
     retired = {}
     if retired_file.exists():
@@ -91,15 +138,14 @@ def check_retired(exam_dir, cards, previous_manifest):
             retired = json.loads(retired_file.read_text(encoding="utf-8"))
         except ValueError as e:
             return [f"retired.json: not valid JSON ({e})"]
-        if not isinstance(retired, dict) or not all(isinstance(k, str) and isinstance(r, str) and r for k, r in retired.items()):
+        if not isinstance(retired, dict) or not all(isinstance(k, str) and isinstance(r, str) and r.strip() for k, r in retired.items()):
             return ['retired.json: must be an object {"<card id>": "<reason>"} with non-empty reasons']
     live = {c["id"] for c in cards if isinstance(c.get("id"), str)}
     errors = [f"retired.json: {rid} is listed as retired but a live card still uses it" for rid in sorted(live & set(retired))]
-    previous = previous_manifest.get("ids") if isinstance(previous_manifest, dict) else None
-    if isinstance(previous, list):
-        missing = sorted(set(previous) - live - set(retired))
-        if missing:
-            errors.append("card ids missing since the previous build (restore them or list them in retired.json): " + ", ".join(missing))
+    missing = sorted(known_ids(ledger, previous_manifest) - live - set(retired))
+    if missing:
+        errors.append(f"card ids missing since an earlier build ({LEDGER} or the previous build.json; "
+                      "restore them or list them in retired.json): " + ", ".join(missing))
     return errors
 
 
@@ -183,10 +229,11 @@ def main():
         "COVERAGE": jdump(report), "NOTES": jdump(notes), "UI": jdump(ui)})
 
     out = ex / "build"
-    say(f"5. write              {out/'index.html'} ({len(html)//1024} KB), build.json")
+    say(f"5. write              {out/'index.html'} ({len(html)//1024} KB), build.json; {LEDGER} keeps every id ever built")
     out.mkdir(exist_ok=True)
     (out / "index.html").write_text(html, encoding="utf-8")
     (out / "build.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    write_ledger(ex, previous, manifest["ids"])
     print(out / "index.html")
 
 

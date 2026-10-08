@@ -291,7 +291,7 @@ def test_retired_id_still_live_is_error(tmp_path):
     ex = copy_example(tmp_path)
     (ex / "retired.json").write_text('{"ex-basic-def": "typo"}', encoding="utf-8")
     r = build(ex)
-    assert r.returncode == 1 and "ex-basic-def" in r.stderr and "still" in r.stderr
+    assert r.returncode == 1 and "ex-basic-def is listed as retired but a live card still uses it" in r.stderr
     assert outputs(ex) == []
 
 
@@ -317,3 +317,137 @@ def test_check_only_also_checks_retired(tmp_path):
     edit_cards(ex, drop_model_card)
     r = build(ex, "--check")
     assert r.returncode == 1 and "ex-model" in r.stderr
+
+
+# --- card-ids.json: the id ledger next to exam.json, so the retired-id check also works on a fresh clone ---
+IDS = ["ex-basic-def", "ex-model", "ex-svc-thing"]
+
+
+def ledger(exam_dir):
+    return json.loads((exam_dir / "card-ids.json").read_text(encoding="utf-8"))
+
+
+def fresh(tmp_path):
+    """example/ copy without build/ and without card-ids.json: the state before any build."""
+    ex = copy_example(tmp_path)
+    (ex / "card-ids.json").unlink(missing_ok=True)
+    return ex
+
+
+def test_first_build_creates_the_id_ledger(tmp_path):
+    ex = fresh(tmp_path)
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    assert ledger(ex) == IDS
+    assert (ex / "card-ids.json").read_text(encoding="utf-8").endswith("\n")
+
+
+def test_check_never_writes_the_id_ledger(tmp_path):
+    ex = fresh(tmp_path)
+    assert build(ex, "--check").returncode == 0
+    assert not (ex / "card-ids.json").exists()
+
+
+def test_fresh_clone_with_ledger_catches_a_missing_id(tmp_path):
+    ex = fresh(tmp_path)
+    (ex / "card-ids.json").write_text(json.dumps(IDS), encoding="utf-8")
+    edit_cards(ex, drop_model_card)
+    assert not (ex / "build").exists()
+    for args in ((), ("--check",)):
+        r = build(ex, *args)
+        assert r.returncode == 1, args
+        assert "ex-model" in r.stderr and "retired.json" in r.stderr and "Traceback" not in r.stderr
+
+
+def test_ledger_keeps_retired_ids(tmp_path):
+    ex = fresh(tmp_path)
+    assert build(ex).returncode == 0
+    edit_cards(ex, drop_model_card)
+    (ex / "retired.json").write_text('{"ex-model": "folded into ex-basic-def"}', encoding="utf-8")
+    assert build(ex).returncode == 0
+    assert ledger(ex) == IDS                     # every id ever built, retired ones included
+    (ex / "retired.json").unlink()
+    (ex / "build" / "build.json").unlink()       # only the ledger still knows ex-model
+    r = build(ex)
+    assert r.returncode == 1 and "ex-model" in r.stderr
+
+
+def test_ledger_grows_with_new_cards(tmp_path):
+    ex = fresh(tmp_path)
+    assert build(ex).returncode == 0
+    edit_cards(ex, lambda cs: cs.append(dict(cs[0], id="ex-new")))
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    assert ledger(ex) == sorted(IDS + ["ex-new"])
+
+
+def test_ledger_takes_ids_of_the_previous_build_too(tmp_path):
+    ex = fresh(tmp_path)
+    (ex / "build").mkdir()
+    (ex / "build" / "build.json").write_text(json.dumps({"ids": IDS + ["ex-old"]}), encoding="utf-8")
+    (ex / "retired.json").write_text('{"ex-old": "removed before the ledger existed"}', encoding="utf-8")
+    assert build(ex).returncode == 0
+    assert ledger(ex) == sorted(IDS + ["ex-old"])
+
+
+def test_non_string_ids_of_the_previous_build_are_ignored(tmp_path):
+    ex = fresh(tmp_path)
+    (ex / "build").mkdir()
+    (ex / "build" / "build.json").write_text(json.dumps({"ids": IDS + [7, {"a": 1}]}), encoding="utf-8")
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    assert "Traceback" not in r.stderr
+    assert ledger(ex) == IDS
+
+
+def test_malformed_ledger_is_error_with_repair_hint(tmp_path):
+    for i, text in enumerate(("{not json", '{"ids": []}', "[1, 2]", '["ex-model", 5, null]')):
+        ex = fresh(tmp_path / str(i))
+        (ex / "card-ids.json").write_text(text, encoding="utf-8")
+        for args in ((), ("--check",)):
+            r = build(ex, *args)
+            assert r.returncode == 1 and "Traceback" not in r.stderr, text
+            assert "card-ids.json" in r.stderr and "repair" in r.stderr and "list of card id strings" in r.stderr, text
+        assert (ex / "card-ids.json").read_text(encoding="utf-8") == text          # never overwritten
+
+
+def test_whitespace_only_retired_reason_is_error(tmp_path):
+    ex = copy_example(tmp_path)
+    (ex / "retired.json").write_text('{"ex-gone": "   "}', encoding="utf-8")
+    r = build(ex)
+    assert r.returncode == 1 and "retired.json" in r.stderr and "non-empty reasons" in r.stderr
+
+
+def test_unreadable_previous_build_json_is_noted_and_skipped(tmp_path):
+    ex = copy_example(tmp_path)
+    (ex / "build").mkdir()
+    (ex / "build" / "build.json").write_text("{broken", encoding="utf-8")
+    r = build(ex)
+    assert r.returncode == 0, r.stderr
+    assert "previous build.json unreadable" in r.stderr
+
+
+def test_example_ledger_is_tracked_and_current():
+    cards = json.loads((EX / "cards" / "basics.json").read_text(encoding="utf-8"))
+    ids = ledger(EX)
+    assert ids == sorted(ids) and {c["id"] for c in cards} <= set(ids)    # retired ids may stay in it
+
+
+def test_ledger_write_is_atomic(tmp_path, monkeypatch):
+    sys.path.insert(0, str(ROOT))
+    from engine import build as b
+    ex = fresh(tmp_path)
+    (ex / "card-ids.json").write_text(json.dumps(IDS), encoding="utf-8")
+    real = pathlib.Path.write_text
+
+    def crash(self, data, *a, **k):          # write half the data, then die like an interrupted process
+        real(self, data[: len(data) // 2], *a, **k)
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(pathlib.Path, "write_text", crash)
+    try:
+        b.write_ledger(ex, {}, IDS + ["ex-new"])
+    except KeyboardInterrupt:
+        pass
+    monkeypatch.undo()
+    assert ledger(ex) == IDS                 # the old ledger is intact

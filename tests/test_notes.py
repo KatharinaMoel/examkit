@@ -79,5 +79,14 @@ def test_frontmatter_survives_crlf():
     assert body.startswith("# X")
 
 
+def test_crlf_note_file_loads_title_covers_and_body(tmp_path):
+    (tmp_path / "w.md").write_bytes(b"---\r\ntitle: Windows\r\ncovers: [1.1, 2.2]\r\n---\r\n# Windows\r\n\r\nSaved with CRLF.\r\n")
+    groups, errors = n.load_notes(tmp_path, {})
+    assert errors == []
+    item = groups[0]["items"][0]
+    assert item["title"] == "Windows" and item["covers"] == ["1.1", "2.2"]
+    assert "Saved with CRLF." in item["html"] and "---" not in item["html"]
+
+
 def test_covers_duplicates_are_dropped():
     assert n.note_covers({"covers": ["1.1", "1.1", "svc:x"]}) == ["1.1", "svc:x"]
