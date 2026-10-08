@@ -197,7 +197,7 @@ def main():
         except ValueError:
             say("   note: previous build.json unreadable, id check skipped")
 
-    say(f"2. validate           {len(cards)} cards: fields, decks, priorities, languages, resolvable src, source tiers; ids against the previous build and retired.json")
+    say(f"2. validate           {len(cards)} cards: fields, decks, priorities, languages, resolvable src, source tiers; ids against card-ids.json, the previous build and retired.json")
     errors = exam_errors + v.validate(cards, exam, coverage, notes_dir, sources_dir) + check_retired(ex, cards, previous)
     say(f"3. notes + coverage   render notes from {notes_dir}; count cards and notes per guide item")
     notes, note_errors = notes_mod.load_notes(notes_dir, exam)

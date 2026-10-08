@@ -213,7 +213,7 @@ def test_mermaid_without_svg_fails_the_run(tmp_path, monkeypatch):
     log = fake_chrome(tmp_path, monkeypatch, "nosvg")
     r = run_print(ex)
     assert r.returncode == 1 and "Traceback" not in r.stderr
-    assert "01-intro.html" in r.stderr and "intro" in r.stderr and "not rendered" in r.stderr
+    assert "01-intro.html" in r.stderr and "(note intro)" in r.stderr and "not rendered" in r.stderr
     assert (ex / "build" / "print" / "01-intro.pdf").exists()        # the PDFs stay for inspection
     assert sorted(dom_calls(log)) == ["00-complete.html", "01-intro.html"]
 
@@ -342,6 +342,21 @@ def test_image_outside_the_notes_dir_is_refused(tmp_path):
     assert not (ex / "build" / "print" / "assets").exists() or not any((ex / "build" / "print" / "assets").rglob("*.png"))
 
 
+def test_symlink_inside_notes_pointing_outside_is_refused(tmp_path):
+    # the link lives in notes/, its target does not: resolve() follows it, so it is refused like ../
+    ex = copy_example(tmp_path)
+    (ex / "secret.png").write_bytes(PNG)
+    (ex / "notes" / "img").mkdir()
+    (ex / "notes" / "img" / "link.png").symlink_to(ex / "secret.png")
+    image_note(ex, "![out](img/link.png)")
+    r = run_print(ex, "--html-only")
+    assert r.returncode == 0, r.stderr
+    assert "warning" in r.stderr and "img/link.png" in r.stderr and "outside" in r.stderr
+    assets = ex / "build" / "print" / "assets"
+    assert not assets.exists() or not any(assets.rglob("*.png"))
+    assert 'src="img/link.png"' in (ex / "build" / "print" / "01-pics.html").read_text(encoding="utf-8")
+
+
 def test_subfolder_note_may_reach_up_inside_the_notes_dir(tmp_path):
     ex = copy_example(tmp_path)
     (ex / "notes" / "img").mkdir()
@@ -385,3 +400,24 @@ def test_images_of_different_notes_never_overwrite_each_other(tmp_path):
         src = re.search(r'<img[^>]*src="([^"]*)"', (out / page_name).read_text(encoding="utf-8")).group(1)
         assert (out / src).read_bytes() == data, page_name          # each page shows its own image
         assert src == asset(slug, source), page_name
+
+
+def test_print_run_reports_a_profile_that_cannot_be_removed(tmp_path, monkeypatch, capsys):
+    from engine import print as print_mod
+    ex = copy_example(tmp_path)
+    log = fake_chrome(tmp_path, monkeypatch, "svg")
+    real_rmtree = shutil.rmtree
+    seen = []
+
+    def rmtree(path, *a, **k):
+        real_rmtree(path, *a, **k)
+        if pathlib.Path(path).name.startswith("examkit-chrome-"):
+            seen.append(str(path))
+            raise OSError(16, "Device or resource busy", str(path))
+
+    monkeypatch.setattr(shutil, "rmtree", rmtree)
+    monkeypatch.setattr(sys, "argv", ["print.py", str(ex)])
+    print_mod.main()
+    err = capsys.readouterr().err
+    assert len(seen) == 1 and any(line.startswith("  ! ") and seen[0] in line for line in err.splitlines()), (seen, err)
+    assert calls(log)

@@ -110,3 +110,32 @@ def test_timeout_kills_every_process_of_the_call(tmp_path, monkeypatch):
     assert not alive(parent), "fake chrome still running"
     assert not alive(child), "a process started by chrome survived the timeout"
     assert not pathlib.Path(profile_of(calls(log)[0])).exists()
+
+
+def test_profile_that_cannot_be_removed_is_reported(tmp_path, monkeypatch, capsys):
+    log, _ = fake_chrome(tmp_path, monkeypatch)
+    real_rmtree = chrome.shutil.rmtree
+
+    def failing_rmtree(path, *a, **k):
+        real_rmtree(path, *a, **k)          # clean up for real, then pretend it failed
+        raise OSError(16, "Device or resource busy", str(path))
+
+    monkeypatch.setattr(chrome.shutil, "rmtree", failing_rmtree)
+    chrome.dump_dom(page(tmp_path))
+    profile = profile_of(calls(log)[0])
+    err = capsys.readouterr().err
+    assert any(line.startswith("  ! ") and profile in line for line in err.splitlines()), err
+
+
+def test_profile_cleanup_failure_after_chrome_failure_keeps_the_chrome_error(tmp_path, monkeypatch, capsys):
+    log, _ = fake_chrome(tmp_path, monkeypatch, mode="fail")
+    real_rmtree = chrome.shutil.rmtree
+
+    def failing_rmtree(path, *a, **k):
+        real_rmtree(path, *a, **k)
+        raise OSError(16, "Device or resource busy", str(path))
+
+    monkeypatch.setattr(chrome.shutil, "rmtree", failing_rmtree)
+    with pytest.raises(RuntimeError, match="exit 3"):
+        chrome.print_pdf(page(tmp_path), tmp_path / "out.pdf")
+    assert profile_of(calls(log)[0]) in capsys.readouterr().err

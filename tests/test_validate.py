@@ -197,6 +197,65 @@ def test_without_tiers_old_behaviour(tmp_path):
     assert "source_tiers" not in exam
 
 
+def test_without_tiers_escaping_paths_rejected(tmp_path):
+    # no source_tiers: ./, ../ and absolute paths are refused even when the file exists
+    src_dir = _tiered_sources(tmp_path)
+    for src in ("source:../outside.md", "source:./loose.md",
+                "source:podcasts/../loose.md", f"source:{tmp_path / 'outside.md'}"):
+        msg = v.resolve_src(src, set(), EX / "notes", src_dir)
+        assert msg is not None and src in msg and "escape" in msg, (src, msg)
+    exam, cov, cards = load()
+    bad = copy.deepcopy(cards)
+    bad[2]["src"] = "source:../outside.md"
+    assert any("source:../outside.md" in m and "escape" in m
+               for m in v.validate(bad, exam, cov, EX / "notes", src_dir))
+
+
+def test_without_tiers_escaping_path_rejected_even_if_missing(tmp_path):
+    msg = v.resolve_src("source:../nope.md", set(), EX / "notes", _tiered_sources(tmp_path))
+    assert msg is not None and "escape" in msg, msg
+
+
+NEUTRAL = "must be a plain relative path inside sources/ (no ./, ../ or absolute paths, which escape sources/)"
+
+
+def test_escape_message_is_neutral_without_tiers(tmp_path):
+    msg = v.resolve_src("source:../outside.md", set(), EX / "notes", _tiered_sources(tmp_path))
+    assert msg == f"src 'source:../outside.md' {NEUTRAL}", msg
+
+
+def _outside_links(tmp_path):
+    src_dir = _tiered_sources(tmp_path)
+    (src_dir / "link.md").symlink_to(tmp_path / "outside.md")
+    (src_dir / "exam-guide" / "link.md").symlink_to(tmp_path / "outside.md")
+    (src_dir / "exam-guide" / "inside.md").symlink_to(src_dir / "loose.md")
+    return src_dir
+
+
+def test_symlink_pointing_outside_rejected_without_tiers(tmp_path):
+    src_dir = _outside_links(tmp_path)
+    for src in ("source:link.md", "source:exam-guide/link.md"):
+        msg = v.resolve_src(src, set(), EX / "notes", src_dir)
+        assert msg is not None and src in msg and "escape" in msg, (src, msg)
+    # a link that stays inside sources/ is fine
+    assert v.resolve_src("source:exam-guide/inside.md", set(), EX / "notes", src_dir) is None
+
+
+def test_symlink_pointing_outside_rejected_with_tiers(tmp_path):
+    src_dir = _outside_links(tmp_path)
+    msg = v.resolve_src("source:exam-guide/link.md", set(), EX / "notes", src_dir, source_tiers=TIERS)
+    assert msg is not None and "source:exam-guide/link.md" in msg and "escape" in msg, msg
+    assert v.resolve_src("source:exam-guide/inside.md", set(), EX / "notes", src_dir, source_tiers=TIERS) is None
+
+
+def test_source_directory_is_not_a_file(tmp_path):
+    src_dir = _tiered_sources(tmp_path)
+    (src_dir / "exam-guide" / "sub").mkdir()
+    for src, tiers in (("source:exam-guide", None), ("source:exam-guide/sub", None), ("source:exam-guide/sub", TIERS)):
+        msg = v.resolve_src(src, set(), EX / "notes", src_dir, source_tiers=tiers)
+        assert msg == f"src '{src}' is a directory, not a file", (src, tiers, msg)
+
+
 def test_invalid_source_tiers_rejected(tmp_path):
     # the card cites a guide id, so each case plants exactly one error: the config error
     cases = [
