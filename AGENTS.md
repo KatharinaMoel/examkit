@@ -58,7 +58,7 @@ smoke test uses an in-page error listener (see the docstring in `engine/chrome.p
 Next:
 1. AIF-C01 exam migrated into examkit as the second exam (after the CLF exam).
 2. Decide whether to publish the static CLF page (after the exam).
-3. Vault guide "Lernkasten füttern" (German, user view) and the generic agent runbook.
+3. First real feeding run for the CLF exam through the generic runbook (`~/ki-os/40-runbooks/kursmaterial-gegen-wissensbasis-abgleichen.md`, vault guide `~/ki-os/20-knowledge/anleitungen/lernkasten-fuettern.md`, both written 2026-10-07, runbook stays `entwurf` until that run). Service coverage goes into a separate services note (decided for the CLF exam, see `exams/aws-clf-c02/AGENTS.md`).
 4. Leftovers: the print pack shows a visible warning when mermaid.js fails to load but does not fail the run (consider a DOM check after printing); the Chrome profile lives in `build/print/.chrome-profile`; the retired-id check compares against the local previous `build/build.json`, not the last commit (vacuous on a fresh clone); relative images in notes do not reach the print pack; `check_tracked.py` and the smoke harness have the small test gaps listed in the Session 2b ledger.
 
 Before starting any of this: run the tests, then `python3 engine/build.py example`.
