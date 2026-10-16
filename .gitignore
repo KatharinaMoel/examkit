@@ -12,3 +12,6 @@ __pycache__/
 # local planning docs (German, personal context) — kept out of the public repo for now
 docs/superpowers/
 
+
+# local review notes and commit drafts
+.reviews/
