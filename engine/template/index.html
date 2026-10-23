@@ -248,7 +248,7 @@ for(const el of document.querySelectorAll('[data-ui]')) el.textContent = T(el.da
 for(const el of document.querySelectorAll('[data-ui-placeholder]')) el.placeholder = T(el.dataset.uiPlaceholder);
 for(const el of document.querySelectorAll('[data-ui-label]')) el.setAttribute('aria-label', T(el.dataset.uiLabel));
 document.getElementById('build-stamp').textContent = T('build_stamp', {t: BUILD.built_at, cards: BUILD.cards, model: BUILD.model_cards});
-</script>
+</script>/*ORIGIN*/
 <script>
 (function(){
 // Tabs: Cards, Coverage, Notes, Plan. The tab that was open last is remembered (localStorage).
@@ -275,7 +275,7 @@ const sum = k => { const s = COV.summary[k]; return T('cov_sum', {green: s.green
 function row(t){
   const notes = (t.notes||[]).map(n=>`<button type="button" data-note="${esc(n)}">${esc(n)}</button>`).join('');
   const skills = (t.skills||[]).length ? `<ul>${t.skills.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>` : '';
-  return `<details class="cov ${t.status}"><summary>${dot(t.status)}<b>${esc(String(t.id).replace(/^(svc|concept):/,''))}</b><span>${esc(t.title||t.name||'')}</span><span class="covn">${T('cov_counts', {cards: t.cards, p1: t.p1 ? T('cov_p1', {n: t.p1}) : '', notes: (t.notes||[]).length})}</span></summary>${skills}${notes?`<div class="covnotes">${notes}</div>`:''}</details>`;
+  return `<details class="cov ${t.status}"><summary>${dot(t.status)}<b>${esc(String(t.id).replace(/^(svc|concept):/,''))}</b><span>${esc(t.title||t.name||'')}</span><span class="covn">${T('cov_counts', {cards: t.cards, p1: t.p1 ? T('cov_p1', {n: t.p1}) : '', notes: (t.notes||[]).length})}</span></summary>/*ORIGIN_COV*/${skills}${notes?`<div class="covnotes">${notes}</div>`:''}</details>`;
 }
 function hit(t){
   if(gaps.getAttribute('aria-pressed')==='true' && t.status==='green') return false;
@@ -406,12 +406,12 @@ const counter = () => Object.values(state.cards).reduce((m,S)=>Math.max(m, S.k||
 function hash(id){ let h=0; for(const ch of id) h=(h*31+ch.charCodeAt(0))|0; return Math.abs(h); }
 const dueAt = (id, S) => S.dn!=null ? S.dn : (S.b>0 ? 1 + hash(id) % GAP[Math.min(3,S.b)] : 0);
 
-function saveLocal(){ try{ localStorage.setItem(LS, JSON.stringify({cards:state.cards, ui:{deck:ui.deck,p1:ui.p1}})); }catch(e){} }
+function saveLocal(){ try{ localStorage.setItem(LS, JSON.stringify({cards:state.cards, ui:{deck:ui.deck,p1:ui.p1/*ORIGIN_SAVE*/}})); }catch(e){} }
 
 // A custom label beats the card priority: "hoch" (high) = priority 1, "niedrig" (low) = priority 3. 'alle' (German for all) is the stored value of the all-decks filter and part of the frozen storage protocol
 const prio = c => { const u = st(c.id).u; return u==='hoch' ? 1 : u==='niedrig' ? 3 : c.p; };
 function base(){
-  return CARDS.filter(c => (ui.deck==='alle'||c.deck===ui.deck) && (!ui.p1||prio(c)===1) && (!ui.weak||(st(c.id).w>0 && st(c.id).u!=='niedrig')));
+  return CARDS.filter(c => (ui.deck==='alle'||c.deck===ui.deck)/*ORIGIN_FILTER*/ && (!ui.p1||prio(c)===1) && (!ui.weak||(st(c.id).w>0 && st(c.id).u!=='niedrig')));
 }
 // Round mode: only the cards of one box (the box that was tapped)
 const fachOf = id => Math.min(3, st(id).b);
@@ -478,7 +478,7 @@ function render(){
   }
   const S = st(c.id);
   const fach = S.b===0 ? T('box_0') : S.b>=3 ? T('box_3') : T('box_n', {n: S.b});
-  let html = `<article class="card"><div class="card-head"><span>${esc(DECKS[c.deck]||c.deck)}${prio(c)===1 ? T('prio1') : prio(c)===3 ? T('prio3') : ''}${S.u ? T('own_choice') : ''}</span><span>${fach}${S.w ? T('wrong_times', {n: S.w}) : ''}</span></div>
+  let html = `<article class="card"><div class="card-head"><span>${esc(DECKS[c.deck]||c.deck)}${prio(c)===1 ? T('prio1') : prio(c)===3 ? T('prio3') : ''}${S.u ? T('own_choice') : ''}</span><span>${fach}${S.w ? T('wrong_times', {n: S.w}) : ''}</span></div>/*ORIGIN_BADGE*/
     <div class="q">${esc(c.q)}</div></article>`;
   if(!ui.revealed){
     html += `<div class="answer-in"><label class="hint" for="ans">${T('answer_label')}</label>
@@ -847,7 +847,7 @@ function merge(remote){
 }
 
 document.addEventListener('click', e=>{
-  const d = e.target.closest('[data-deck]'); if(d){ ui.deck=d.dataset.deck; saveLocal(); renderChips(); ui.fachSeen = new Set(); ui.cur = null; next(); }
+  /*ORIGIN_CLICK*/const d = e.target.closest('[data-deck]'); if(d){ ui.deck=d.dataset.deck; saveLocal(); renderChips(); ui.fachSeen = new Set(); ui.cur = null; next(); }
   const f = e.target.closest('[data-fach]'); if(f){ setFach(+f.dataset.fach); }
 });
 $('p1only').onclick=()=>{ ui.p1=!ui.p1; saveLocal(); renderChips(); next(); };
@@ -858,7 +858,7 @@ let resetStep = 0, resetTimer = null, resetBackup = null;
 function resetRender(){
   const box = $('resetbox'); clearTimeout(resetTimer);
   const ids = pool().map(c=>c.id).filter(id=>state.cards[id]);
-  const wo = (ui.deck==='alle' ? T('reset_all') : T('reset_deck', {deck: esc(ui.deck)})) + (ui.fach==null ? '' : T('reset_box', {name: FACHNAME[ui.fach]})) + (ui.p1 ? T('reset_p1') : '');
+  const wo = (ui.deck==='alle' ? T('reset_all') : T('reset_deck', {deck: esc(ui.deck)})) + (ui.fach==null ? '' : T('reset_box', {name: FACHNAME[ui.fach]})) + (ui.p1 ? T('reset_p1') : '')/*ORIGIN_RESET*/;
   const nein = `<button type="button" data-r="nein">${T('cancel')}</button>`;
   if(resetStep===0){ box.hidden = true; box.innerHTML = ''; return; }
   box.hidden = false;
@@ -1005,4 +1005,4 @@ renderChips(); next();
   }catch(e){ $('sync').textContent = T('sync_local'); }
 })();
 })();
-</script>
+</script>/*MATH*/

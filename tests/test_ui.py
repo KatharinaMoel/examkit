@@ -11,7 +11,8 @@ def load(lang):
 
 
 def template():
-    return (TPL / "index.html").read_text(encoding="utf-8")
+    # the page plus the origin snippet build.py inserts with exam.origins: together they must use every UI key
+    return (TPL / "index.html").read_text(encoding="utf-8") + (TPL / "origin.html").read_text(encoding="utf-8")
 
 
 def test_de_and_en_have_same_keys():

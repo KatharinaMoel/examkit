@@ -12,6 +12,11 @@ Optional trust tiers (``exam.source_tiers``) map a first-level folder of
 ``source:`` src must live in a listed folder whose tier is primary or
 official; hypothesis-tier material (podcasts, third-party courses) can
 never back a card.
+
+Optional origins (``exam.origins``) name where a card's content comes from, e.g.
+lecture, exercise or literature: an ordered object {"<key>": "<label>"}. A card may
+then carry ``origin`` (one of those keys) and ``origin_detail`` (a short free text such
+as "lecture 19.10."). Without ``exam.origins`` a card's ``origin`` is an error.
 """
 import json
 import pathlib
@@ -22,6 +27,7 @@ CTX_SRC = {"note", "source", "guide", "model"}
 SRC_RE = re.compile(r"^(guide|note|source):(.+)$")
 TIERS = ("primary", "official", "hypothesis")
 CARD_TIERS = {"primary", "official"}
+ORIGIN_KEY_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
 
 def load_cards(cards_dir: pathlib.Path) -> list[dict]:
@@ -71,6 +77,41 @@ def check_source_tiers(tiers) -> list[str]:
             errors.append(f"exam.source_tiers: folder '{folder}' must be a first-level folder name (not empty, '.' or '..', no '/')")
         if not isinstance(tier, str) or tier not in TIERS:
             errors.append(f"exam.source_tiers: tier '{tier}' for folder '{folder}' must be one of {', '.join(TIERS)}")
+    return errors
+
+
+def check_origins(origins) -> list[str]:
+    """Schema check for exam.origins (None means: not configured)."""
+    if origins is None:
+        return []
+    example = '{"lecture": "Lecture", "exercise": "Exercise"}'
+    if not isinstance(origins, dict) or not origins:
+        return [f"exam.origins: must be a non-empty object mapping an origin key to its label, e.g. {example}"]
+    errors = []
+    for key, label in origins.items():
+        if not ORIGIN_KEY_RE.match(key):
+            errors.append(f"exam.origins: key '{key}' must be lowercase letters, digits, '-' or '_' "
+                          "(starting with a letter or digit)")
+        if not isinstance(label, str) or not label.strip():
+            errors.append(f"exam.origins: label for '{key}' must be a non-empty string")
+    return errors
+
+
+def _origin_errors(c, origins) -> list[str]:
+    """Card fields origin / origin_detail against exam.origins (None = not configured, {} = broken config)."""
+    errors = []
+    if "origin" in c:
+        o = c["origin"]
+        if origins is None:
+            errors.append(f"origin '{o}' needs exam.origins in exam.json (an ordered object of allowed keys and labels)")
+        elif not isinstance(o, str) or o not in origins:
+            errors.append(f"origin '{o}' not in exam.origins {list(origins)}")
+    if "origin_detail" in c:
+        d = c["origin_detail"]
+        if not isinstance(d, str) or not d.strip():
+            errors.append("origin_detail must be a non-empty string")
+        elif "origin" not in c:
+            errors.append("origin_detail needs origin")
     return errors
 
 
@@ -172,6 +213,10 @@ def validate(cards, exam, coverage, notes_dir, sources_dir) -> list[str]:
     tiers = exam.get("source_tiers")
     errors += check_source_tiers(tiers)
     tiers = _effective_tiers(tiers)
+    origins = exam.get("origins")
+    errors += check_origins(origins)
+    if origins is not None and not isinstance(origins, dict):
+        origins = {}  # a broken origins config accepts no card origin (fail closed)
     for n, c in enumerate(cards, 1):
         if not isinstance(c, dict):
             errors.append(f"card #{n} in ? is not an object")
@@ -207,6 +252,7 @@ def validate(cards, exam, coverage, notes_dir, sources_dir) -> list[str]:
         for f in ("unsure", "conflict"):
             if f in c and (not isinstance(c[f], str) or not c[f].strip()):
                 errors.append(f"{label}: {f} must be a non-empty string")
+        errors += [f"{label}: {m}" for m in _origin_errors(c, origins)]
         if "covers" in c:
             if not _is_str_list(c["covers"]):
                 errors.append(f"{label}: covers must be a list of ids")

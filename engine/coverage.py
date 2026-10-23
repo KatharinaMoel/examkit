@@ -26,25 +26,34 @@ def status(n_cards, n_notes):
     return "green" if n_cards and n_notes else "yellow" if n_cards or n_notes else "red"
 
 
-def compute(coverage, cards, notes_dir):
+def compute(coverage, cards, notes_dir, origins=None):
     """Return (report, errors). The report mirrors coverage.json; every item row gains
-    cards, p1, notes (slugs) and status. errors lists note ids that are not in coverage.json."""
+    cards, p1, notes (slugs) and status. errors lists note ids that are not in coverage.json.
+
+    With ``origins`` (exam.origins) every row also gains ``origins`` ({key: cards} in config
+    order, non-zero only) and ``no_origin`` (cards without origin); without it the report is unchanged."""
     ids = v.coverage_ids(coverage)
     by_note = notes_covers(notes_dir)
     errors = [f"note {slug}.md: covers '{cid}' is not an id in coverage.json"
               for cid, slugs in sorted(by_note.items()) if cid not in ids for slug in slugs]
-    n_cards, n_p1 = {}, {}
+    n_cards, n_p1, n_origin = {}, {}, {}
     for c in cards:
         for cid in c.get("covers") or []:
             n_cards[cid] = n_cards.get(cid, 0) + 1
             if c.get("p") == 1:
                 n_p1[cid] = n_p1.get(cid, 0) + 1
+            per = n_origin.setdefault(cid, {})
+            per[c.get("origin")] = per.get(c.get("origin"), 0) + 1
 
     def row(item):
         cid = item["id"]
         r = dict(item)
         r.update(cards=n_cards.get(cid, 0), p1=n_p1.get(cid, 0), notes=by_note.get(cid, []))
         r["status"] = status(r["cards"], len(r["notes"]))
+        if origins:
+            per = n_origin.get(cid, {})
+            r["origins"] = {k: per[k] for k in origins if per.get(k)}
+            r["no_origin"] = per.get(None, 0)
         return r
 
     report = {"domains": [], "services": [row(s) for s in coverage.get("services", [])],

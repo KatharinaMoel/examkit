@@ -21,14 +21,16 @@ Read this first; it replaces a hand-over. Project rules in short:
 
 | Path | What |
 |---|---|
-| `engine/validate.py` | card validation (fields, decks, priorities, languages, covers, resolvable src, source tiers) |
+| `engine/validate.py` | card validation (fields, decks, priorities, languages, covers, resolvable src, source tiers, origins) |
 | `engine/build.py` | `python3 engine/build.py <exam_dir> [--check]` → `<exam_dir>/build/index.html` + `build.json`; prints a coverage summary |
-| `engine/notes.py` | frontmatter, Markdown → HTML (python-markdown), Mermaid kept for the browser, note list from `exam.json.notes` |
+| `engine/notes.py` | frontmatter, Markdown → HTML (python-markdown), Mermaid kept for the browser, TeX spans protected when `exam.json.math` is set (also holds the MathJax URL), note list from `exam.json.notes` |
 | `engine/coverage.py` | cards (`covers`) and notes (frontmatter `covers`) per guide item; green/yellow/red |
-| `engine/template/index.html` | the flashcard page (tabs Cards, Coverage, Notes, Plan); placeholders `/*TITLE*/ /*CONFIG*/ /*UI*/ /*CARDS*/ /*PLAN*/ /*BUILD*/ /*COVERAGE*/ /*NOTES*/` |
-| `engine/template/ui.de.json`, `ui.en.json` | every UI string; `exam.json.ui_language` picks one; `tests/test_ui.py` enforces that the template uses exactly these keys |
+| `engine/template/index.html` | the flashcard page (tabs Cards, Coverage, Notes, Plan); placeholders `/*TITLE*/ /*CONFIG*/ /*UI*/ /*CARDS*/ /*PLAN*/ /*BUILD*/ /*COVERAGE*/ /*NOTES*/ /*MATH*/ /*ORIGIN*/` plus the origin hooks `/*ORIGIN_FILTER|BADGE|SAVE|CLICK|RESET|COV*/` (code in `build.py` `ORIGIN_HOOKS`) |
+| `engine/template/origin.html` | origin badge, filter chips and coverage counts (`window.examkitOrigin`), inserted at `/*ORIGIN*/` only with `exam.json` `"origins"`; without it every origin placeholder renders to nothing and the `origin_*` UI strings are dropped |
+| `engine/template/math.html` | MathJax loader, inserted at `/*MATH*/` only with `exam.json` `"math": "mathjax"` (else `/*MATH*/` renders to nothing); a MutationObserver re-typesets changed regions |
+| `engine/template/ui.de.json`, `ui.en.json` | every UI string; `exam.json.ui_language` picks one; `tests/test_ui.py` enforces that the template plus `origin.html` use exactly these keys |
 | `engine/chrome.py` | headless Chrome helper: `find_chrome`, `dump_dom`, `print_pdf` (Flatpak paths via `--filesystem`) |
-| `engine/print.py` | `python3 engine/print.py <exam_dir> [--html-only]` → `build/print/NN-<slug>.html` and `.pdf` per note plus `00-complete.*`; PDF needs headless Chrome |
+| `engine/print.py` | `python3 engine/print.py <exam_dir> [--html-only]` → `build/print/NN-<slug>.html` and `.pdf` per note plus `00-complete.*`; PDF needs headless Chrome; fails on unrendered Mermaid or formulas |
 | `engine/check_tracked.py` | `git ls-files \| python3 engine/check_tracked.py` fails on tracked exam content, `sources/` (except `example/sources/`) or `build/` |
 | `.github/workflows/demo.yml` | CI: tracked-path check, tests, build of `example/`; deploys it to GitHub Pages from `main` |
 | `requirements.txt` | `markdown>=3.5` — the only dependency beyond the stdlib |
@@ -37,13 +39,13 @@ Read this first; it replaces a hand-over. Project rules in short:
 | `exams/<id>/AGENTS.md` | per-exam hand-over (goal, deadline, state, publish URL) — read it when working on that exam |
 | `docs/superpowers/` | spec and plans (local only, git-ignored); if absent, the README "Status" section is the summary |
 
-## Current state (2026-10-08, after Session 3)
+## Current state (2026-10-23, after the math and origin sessions)
 
 Done: validator, build CLI, config-driven template, example, README (Session 1); coverage tab,
 notes tab (Markdown + Mermaid on demand), UI language files de/en, hardening (Session 2a);
 progress export/import (JSON file, newer grade wins per card), `retired.json` for card ids
 (`build.json` lists all `ids`), browser smoke test, print pack (`engine/print.py`), tracked-path check
-and GitHub Actions workflow for the Pages demo (Session 2b); source tiers in the validator (`exam.json.source_tiers`: primary / official / hypothesis, hypothesis never backs a card), engine hardening (print pack fails on unrendered Mermaid, relative note images in the print pack, temporary Chrome profile with process-group cleanup, `card-ids.json` id ledger next to `exam.json` for the retired-id check) and 54 catalog cards for the CLF exam (Session 3); engine polish (`source:` must be a file and never leaves `sources/`, not even through a symlink, also without tiers; a temporary Chrome profile that cannot be removed is reported with `  ! `, not hidden). 173 tests. Repo `KatharinaMoel/examkit`,
+and GitHub Actions workflow for the Pages demo (Session 2b); source tiers in the validator (`exam.json.source_tiers`: primary / official / hypothesis, hypothesis never backs a card), engine hardening (print pack fails on unrendered Mermaid, relative note images in the print pack, temporary Chrome profile with process-group cleanup, `card-ids.json` id ledger next to `exam.json` for the retired-id check) and 54 catalog cards for the CLF exam (Session 3); engine polish (`source:` must be a file and never leaves `sources/`, not even through a symlink, also without tiers; a temporary Chrome profile that cannot be removed is reported with `  ! `, not hidden); feedback block on both card sides. Optional formulas (2026-10-23): `exam.json` `"math": "mathjax"` loads MathJax 3.2.2 (SVG, cdnjs) through `engine/template/math.html`, notes protect TeX spans from Markdown, the print pack checks every formula; without the key the CLF page builds byte-identical apart from `built_at` (checked). 196 tests (`tests/test_math.py` incl. a real-Chrome smoke test that needs network to cdnjs and skips without it). Optional card origin (2026-10-23): `exam.json` `"origins": {"<key>": "<label>"}` (ordered), card `origin` + `origin_detail`; validator (unknown key, origin without config, detail type), build summary and `build.json` `by_origin`/`no_origin`, coverage rows `origins`/`no_origin`, badge on the card front, single-choice filter chips stored as `ui.origin` in the existing local state (storage protocol otherwise untouched; old states load as "any origin"); without the key the CLF page builds byte-identical apart from `built_at` (checked). 218 tests (`tests/test_origin.py`, two real-Chrome tests). Repo `KatharinaMoel/examkit`,
 demo live at <https://katharinamoel.github.io/examkit/> (first workflow run 2026-10-07 passed). Install:
 `python3 -m pip install --user -r requirements.txt`.
 First exam `exams/aws-clf-c02` is live as a private claude.ai artifact (coverage + notes tabs).

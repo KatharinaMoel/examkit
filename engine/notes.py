@@ -2,6 +2,10 @@
 
 Markdown is rendered at build time with python-markdown. A ```mermaid block is
 kept verbatim as <pre class="mermaid"> and drawn by mermaid.js in the browser.
+With math on (exam.json "math": "mathjax"), every TeX span ($...$, $$...$$, \\(...\\),
+\\[...\\]) outside code is swapped for a placeholder before Markdown runs and put back
+afterwards, HTML-escaped and wrapped in <span class="math">, so Markdown never sees
+`_`, `*`, `\\` or `|` inside a formula; MathJax typesets it in the browser.
 Frontmatter is the minimal YAML subset the vault uses: `key: value` lines,
 where a value in [brackets] is a list of strings.
 """
@@ -19,6 +23,25 @@ MERMAID_RE = re.compile(r"```mermaid[^\n]*\n(.*?)```", re.S)
 WIKILINK_ALIAS_RE = re.compile(r"\[\[([^\]|]+)\|([^\]]+)\]\]")
 WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
 MARKER = "EXAMKITMERMAID{}END"
+MATH_MARKER = "EXAMKITMATH{}END"
+MATH_MODES = ("mathjax",)
+# MathJax 3.2.2 (June 2022), SVG output: one script and no stylesheet, both from cdnjs.
+MATHJAX_URL = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"
+# The delimiters MathJax looks for; MATH_RE below protects exactly these from Markdown.
+MATHJAX_TEX = ('{inlineMath: [["$", "$"], ["\\\\(", "\\\\)"]], '
+               'displayMath: [["$$", "$$"], ["\\\\[", "\\\\]"]], processEscapes: true}')
+# Leftmost match wins; at one position the alternatives are tried in order. Code is matched only
+# to be skipped (a `$` in code is no formula). An inline $ must not touch whitespace on its inner
+# side and the closing $ must not be followed by a digit, so "costs $5 and $6" stays text; an inline
+# span never holds a backtick, so a `$` in code later on the line does not close it.
+MATH_RE = re.compile(
+    r"(?P<code>^[ \t]*(?P<fence>```+|~~~+)[^\n]*\n.*?^[ \t]*(?P=fence)[ \t]*$"
+    r"|(?P<ticks>`+)(?:[^\n]|\n(?![ \t]*\n))+?(?<!`)(?P=ticks)(?!`))"
+    r"|(?P<math>\$\$.+?\$\$"
+    r"|\\\[.+?\\\]"
+    r"|\\\(.+?\\\)"
+    r"|(?<![\\$])\$(?![\s$])(?:\\.|[^$\\\n`]|\n(?![ \t]*\n))+?(?<![\s\\])\$(?!\d))",
+    re.S | re.M)
 
 
 def _unquote(s):
@@ -59,8 +82,28 @@ def _wikilink(m):
     return f'<a href="#note-{html.escape(target)}">{html.escape(target)}</a>'
 
 
-def render(body):
-    """Markdown body -> HTML. Mermaid blocks survive untouched inside <pre class="mermaid">."""
+def protect_math(text):
+    """Swap every TeX span outside code for MATH_MARKER; returns (text, spans) for restore_math."""
+    spans = []
+
+    def swap(m):
+        if m.group("math") is None:
+            return m.group(0)
+        spans.append(m.group("math"))
+        return MATH_MARKER.format(len(spans) - 1)
+
+    return MATH_RE.sub(swap, text), spans
+
+
+def restore_math(out, spans):
+    """Put the spans back into rendered HTML, escaped, each in <span class="math">."""
+    return re.sub(r"EXAMKITMATH(\d+)END",
+                  lambda m: f'<span class="math">{html.escape(spans[int(m.group(1))], quote=False)}</span>', out)
+
+
+def render(body, math=False):
+    """Markdown body -> HTML. Mermaid blocks survive untouched inside <pre class="mermaid">;
+    with math=True TeX spans survive too (see protect_math)."""
     if markdown is None:
         raise SystemExit("python-markdown is missing: python3 -m pip install --user -r requirements.txt")
     blocks = []
@@ -70,11 +113,16 @@ def render(body):
         return f"\n\n{MARKER.format(len(blocks) - 1)}\n\n"
 
     text = MERMAID_RE.sub(keep, body)
+    spans = []
+    if math:
+        text, spans = protect_math(text)
     text = WIKILINK_ALIAS_RE.sub(r"\2", text)
     text = WIKILINK_RE.sub(_wikilink, text)
     out = markdown.Markdown(extensions=["tables", "fenced_code", "sane_lists"]).convert(text)
     for i, code in enumerate(blocks):
         out = out.replace(f"<p>{MARKER.format(i)}</p>", f'<pre class="mermaid">{html.escape(code)}</pre>')
+    if spans:
+        out = restore_math(out, spans)
     return out
 
 
@@ -115,6 +163,6 @@ def load_notes(notes_dir, exam):
             meta, body = split_frontmatter(f.read_text(encoding="utf-8"))
             title = it.get("title") or meta.get("title") or _first_heading(body) or slug
             items.append({"slug": slug, "title": str(title), "subtitle": str(it.get("subtitle") or ""),
-                          "covers": note_covers(meta), "html": render(body)})
+                          "covers": note_covers(meta), "html": render(body, math=exam.get("math") in MATH_MODES)})
         groups.append({"group": str(g.get("group") or ""), "items": items})
     return groups, errors

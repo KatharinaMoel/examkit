@@ -1,0 +1,49 @@
+
+<style>
+/* Origin (exam.json "origins"): badge on the card front, filter chips under the other filters */
+.origin{padding:8px 14px 0;font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.origin b{font-size:12px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:1px 8px}
+details.cov .covorig{margin:4px 0 0;font-size:13px;color:var(--muted);font-family:var(--mono)}
+</style>
+<script>
+// Origin (exam.json "origins"): build.py inserts this block and the small origin hooks of the page script
+// only when origins are configured. It keeps the selected origin (stored as ui.origin next to ui.deck in the
+// learner's local state; '' = all, '_none' = cards without origin) and renders the chips, the badge and the
+// per-origin coverage counts. The page script asks it through window.examkitOrigin.
+window.examkitOrigin = (function(){
+  const ORIGINS = CONFIG.origins || {};
+  const CARDS = JSON.parse(document.getElementById('cards').textContent);
+  const ALL = '', NONE = '_none';
+  const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const count = {}; let none = 0;
+  for(const c of CARDS){ if(c.origin) count[c.origin] = (count[c.origin]||0) + 1; else none++; }
+  const known = k => k===ALL || (k===NONE ? none>0 : !!count[k]);
+  let sel = ALL;
+  try{ const s = JSON.parse(localStorage.getItem(CONFIG.storage_key)||'null'); const o = s && s.ui && s.ui.origin; if(typeof o==='string' && known(o)) sel = o; }catch(e){}
+  const label = k => k===NONE ? T('origin_none') : (ORIGINS[k] || k);
+  // Chip row right after the priority/errors filters; hidden while no card has an origin
+  const row = document.createElement('div');
+  row.className = 'chips'; row.id = 'origins'; row.setAttribute('role', 'group'); row.setAttribute('aria-label', T('origin_aria'));
+  const anchor = document.getElementById('p1only');
+  if(anchor) anchor.parentElement.after(row);
+  function chips(){
+    const used = Object.keys(ORIGINS).filter(k => count[k]);
+    row.hidden = !used.length;
+    const items = [[ALL, T('origin_all'), CARDS.length], ...used.map(k => [k, label(k), count[k]]), ...(none ? [[NONE, label(NONE), none]] : [])];
+    row.innerHTML = items.map(([k, v, n]) => `<button class="chip" type="button" data-origin="${esc(k)}" aria-pressed="${sel===k}">${esc(v)}<small>${n}</small></button>`).join('');
+  }
+  chips();
+  return {
+    sel: () => sel,
+    ok: c => sel===ALL || (sel===NONE ? !c.origin : c.origin===sel),
+    badge: c => c.origin ? `<div class="origin"><b>${esc(label(c.origin))}</b>${c.origin_detail ? `<span>${esc(c.origin_detail)}</span>` : ''}</div>` : '',
+    click(e){ const b = e.target.closest('[data-origin]'); if(!b) return false; sel = known(b.dataset.origin) ? b.dataset.origin : ALL; chips(); return true; },
+    where: () => sel===ALL ? '' : T('origin_reset', {name: esc(label(sel))}),
+    cov(t){
+      const parts = Object.entries(t.origins||{}).map(([k, n]) => `${esc(label(k))} ${n}`);
+      if(t.no_origin) parts.push(`${esc(label(NONE))} ${t.no_origin}`);
+      return parts.length ? `<p class="covorig">${parts.join(' · ')}</p>` : '';
+    }
+  };
+})();
+</script>

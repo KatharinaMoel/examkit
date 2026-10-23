@@ -21,9 +21,23 @@ from engine import coverage as cov_mod  # noqa: E402
 from engine import notes as notes_mod  # noqa: E402
 
 TEMPLATE = HERE / "template" / "index.html"
+MATH_SNIPPET = HERE / "template" / "math.html"
+ORIGIN_SNIPPET = HERE / "template" / "origin.html"
 UI_DIR = HERE / "template"
 EMPTY_PLAN = {"stand": "", "links_alle": None, "tage": []}
-PLACEHOLDERS = ("TITLE", "CONFIG", "CARDS", "PLAN", "BUILD", "COVERAGE", "NOTES", "UI")
+# Origin hooks (exam.json "origins"): small code pieces at fixed spots of the page script; each one is
+# empty without origins, so such a page is built exactly as before. The logic lives in origin.html.
+ORIGIN_HOOKS = {
+    "ORIGIN_FILTER": " && examkitOrigin.ok(c)",
+    "ORIGIN_BADGE": "${examkitOrigin.badge(c)}",
+    "ORIGIN_SAVE": ",origin:examkitOrigin.sel()",
+    "ORIGIN_CLICK": "if(examkitOrigin.click(e)){ saveLocal(); ui.fachSeen = new Set(); ui.cur = null; next(); return; }",
+    "ORIGIN_RESET": " + examkitOrigin.where()",
+    "ORIGIN_COV": "${examkitOrigin.cov(t)}",
+}
+ORIGIN_UI_PREFIX = "origin_"   # UI strings only the origin snippet uses; left out of pages without origins
+PLACEHOLDERS = ("TITLE", "CONFIG", "CARDS", "PLAN", "BUILD", "COVERAGE", "NOTES", "UI", "MATH", "ORIGIN",
+                *ORIGIN_HOOKS)
 PLACEHOLDER_RE = re.compile(r"/\*(" + "|".join(PLACEHOLDERS) + r")\*/")
 
 
@@ -77,6 +91,8 @@ def check_exam(exam):
     if tts is not None and (not isinstance(tts, dict)
                             or not all(isinstance(k, str) and isinstance(val, str) for k, val in tts.items())):
         errors.append('exam.tts: must be an object mapping language code to BCP-47 tag, e.g. {"de": "de-DE"}')
+    if "math" in exam and exam["math"] not in notes_mod.MATH_MODES:
+        errors.append(f'exam.math: must be one of {", ".join(map(repr, notes_mod.MATH_MODES))} or absent (got {exam["math"]!r})')
     return errors
 
 
@@ -170,6 +186,35 @@ def render(template, values):
     return PLACEHOLDER_RE.sub(lambda m: values[m.group(1)], template)
 
 
+def origin_values(exam):
+    """Placeholder values for the origin snippet and hooks: filled with exam.origins, all "" without."""
+    on = bool(exam.get("origins"))
+    values = {name: code if on else "" for name, code in ORIGIN_HOOKS.items()}
+    values["ORIGIN"] = ORIGIN_SNIPPET.read_text(encoding="utf-8") if on else ""
+    return values
+
+
+def page_ui(ui, exam):
+    """UI strings embedded in the page; the origin_* strings only when exam.origins is set."""
+    if exam.get("origins"):
+        return ui
+    return {k: val for k, val in ui.items() if not k.startswith(ORIGIN_UI_PREFIX)}
+
+
+def origin_counts(cards, origins):
+    """(cards per origin key in config order, non-zero only; cards without origin)."""
+    by = {k: sum(c.get("origin") == k for c in cards) for k in origins}
+    return {k: n for k, n in by.items() if n}, sum("origin" not in c for c in cards)
+
+
+def math_block(exam):
+    """The MathJax loader for the page when exam.json sets "math": "mathjax", else "" (page unchanged)."""
+    if exam.get("math") not in notes_mod.MATH_MODES:
+        return ""
+    return (MATH_SNIPPET.read_text(encoding="utf-8")
+            .replace("__MATHJAX_URL__", notes_mod.MATHJAX_URL).replace("__MATHJAX_TEX__", notes_mod.MATHJAX_TEX))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("exam_dir", type=pathlib.Path)
@@ -201,7 +246,7 @@ def main():
     errors = exam_errors + v.validate(cards, exam, coverage, notes_dir, sources_dir) + check_retired(ex, cards, previous)
     say(f"3. notes + coverage   render notes from {notes_dir}; count cards and notes per guide item")
     notes, note_errors = notes_mod.load_notes(notes_dir, exam)
-    report, cov_errors = cov_mod.compute(coverage, cards, notes_dir)
+    report, cov_errors = cov_mod.compute(coverage, cards, notes_dir, exam.get("origins") if isinstance(exam.get("origins"), dict) else None)
     errors += note_errors + cov_errors
     if errors:
         say("\n".join(errors))
@@ -219,6 +264,11 @@ def main():
     say(f"   ok: {len(cards)} cards, decks {by_deck}, model-knowledge cards: {model_cards}")
     by_tier = tier_counts(cards, exam.get("source_tiers"))
     say("   source tiers: " + ", ".join(f"{t} {n}" for t, n in by_tier.items()))
+    origins = exam.get("origins")
+    if origins:
+        by_origin, no_origin = origin_counts(cards, origins)
+        say("   origins: " + ", ".join([f"{origins[k]} ({k}) {n}" for k, n in by_origin.items()]
+                                       + [f"without origin {no_origin}"]))
     for line in cov_mod.summary_lines(report):
         say(line)
     if a.check:
@@ -236,12 +286,17 @@ def main():
         "by_priority": {p: sum(c["p"] == p for c in cards) for p in (1, 2, 3)},
         "coverage": report["summary"],
     }
-    say("4. render             embed config, UI strings, cards, plan, coverage, notes and manifest into template")
+    if origins:
+        manifest["by_origin"], manifest["no_origin"] = by_origin, no_origin
+    say("4. render             embed config, UI strings, cards, plan, coverage, notes and manifest into template"
+        + ("; MathJax loader for formulas (exam.math)" if math_block(exam) else "")
+        + ("; origin badge and filter (exam.origins)" if origins else ""))
     html = render(TEMPLATE.read_text(encoding="utf-8"), {
         "TITLE": html_mod.escape(f"{exam['title']} · {ui['title_suffix']}"),
         "CONFIG": jdump(exam), "CARDS": jdump(cards), "PLAN": jdump(plan),
         "BUILD": jdump(manifest),
-        "COVERAGE": jdump(report), "NOTES": jdump(notes), "UI": jdump(ui)})
+        "COVERAGE": jdump(report), "NOTES": jdump(notes), "UI": jdump(page_ui(ui, exam)), "MATH": math_block(exam),
+        **origin_values(exam)})
 
     out = ex / "build"
     say(f"5. write              {out/'index.html'} ({len(html)//1024} KB), build.json; {LEDGER} keeps every id ever built")

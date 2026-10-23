@@ -154,5 +154,9 @@
   "cov_none": "Nothing found.",
   "notes_search": "Search notes …",
   "notes_none": "No notes built.",
-  "speech_superset": " includes "
+  "speech_superset": " includes ",
+  "origin_aria": "Origin",
+  "origin_all": "Any origin",
+  "origin_none": "no origin",
+  "origin_reset": ", origin \"{name}\""
 }

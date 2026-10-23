@@ -154,5 +154,9 @@
   "cov_none": "Nichts gefunden.",
   "notes_search": "Notiz suchen …",
   "notes_none": "Keine Notizen gebaut.",
-  "speech_superset": " umfasst "
+  "speech_superset": " umfasst ",
+  "origin_aria": "Herkunft",
+  "origin_all": "Jede Herkunft",
+  "origin_none": "ohne Herkunft",
+  "origin_reset": ", Herkunft „{name}“"
 }

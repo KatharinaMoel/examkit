@@ -1,0 +1,40 @@
+<script>
+// Math (exam.json "math": "mathjax"): build.py inserts this block at the end of the page only when math is on.
+// MathJax 3 (SVG output) typesets $...$, $$...$$, \(...\) and \[...\] in the regions below. The page code
+// sets these regions with innerHTML; a MutationObserver marks a changed region and it is typeset again
+// (card change, flip, verdict, history, tab switch), so the page code itself needs no math hooks.
+// A hidden region (tab not shown) waits until it is shown. Without network the TeX source stays readable.
+window.MathJax = {
+  tex: __MATHJAX_TEX__,
+  startup: {typeset: false}
+};
+(function(){
+  const ROOTS = ['stage', 'hist', 'notes-nav', 'notes-out', 'coverage-out', 'plan-out']
+    .map(id => document.getElementById(id)).filter(Boolean);
+  const dirty = new Set(ROOTS);
+  let ready = false, timer = null, chain = Promise.resolve();
+  const shown = el => !el.closest('[hidden]');
+  function flush(){
+    timer = null;
+    if(!ready) return;
+    const todo = [...dirty].filter(shown);
+    if(!todo.length) return;
+    todo.forEach(el => dirty.delete(el));
+    // One typeset at a time; MathJax's own DOM changes mark the region once more, the next pass finds nothing new.
+    chain = chain.then(() => MathJax.typesetPromise(todo)).catch(() => {})
+      .then(() => { document.documentElement.dataset.mathjax = 'done'; });
+  }
+  const later = () => { if(timer === null) timer = setTimeout(flush, 0); };
+  const observer = new MutationObserver(records => {
+    for(const r of records){ const root = ROOTS.find(el => el.contains(r.target)); if(root) dirty.add(root); }
+    later();
+  });
+  for(const el of ROOTS) observer.observe(el, {childList: true, subtree: true, characterData: true});
+  document.addEventListener('examkit:show', later);
+  const s = document.createElement('script');
+  s.src = '__MATHJAX_URL__';
+  s.onload = () => { MathJax.startup.promise.then(() => { ready = true; later(); }); };
+  s.onerror = () => { document.documentElement.dataset.mathjax = 'failed'; };
+  document.head.appendChild(s);
+})();
+</script>

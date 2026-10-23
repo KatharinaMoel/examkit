@@ -6,7 +6,10 @@ Writes <exam_dir>/build/print/NN-<slug>.html and 00-complete.html, and next to e
 unless --html-only. Notes come from exam.json (notes_dir, notes) exactly as the Notes tab
 shows them. Images a note references by a relative path are copied to build/print/assets/<slug>/<hash>-<name>.
 After printing, every page with a Mermaid diagram is loaded once more and its rendered DOM must
-show an <svg> per diagram; otherwise the run fails (mermaid.js missing or broken).
+show an <svg> per diagram; otherwise the run fails (mermaid.js missing or broken). With
+exam.json "math": "mathjax", pages with formulas load MathJax (typeset on load, inside the page
+time Chrome grants before printing) and are checked the same way: every <span class="math">
+must hold a rendered <mjx-container>.
 Diagnostics go to stderr, the output directory to stdout. Exit 1 on errors.
 """
 import argparse
@@ -32,6 +35,8 @@ LEAD_H1_RE = re.compile(r"\A\s*<h1[^>]*>(.*?)</h1>\s*", re.S)
 IMG_SRC_RE = re.compile(r'(<img\b[^>]*?\bsrc=")([^"]*)(")', re.I)
 URL_SCHEME_RE = re.compile(r"\A[a-zA-Z][a-zA-Z0-9+.-]*:")
 MERMAID_BLOCK_RE = re.compile(r'<pre\b[^>]*\bclass="[^"]*\bmermaid\b[^"]*"[^>]*>(.*?)</pre>', re.S)
+# notes.restore_math wraps every formula in exactly this tag; MathJax puts <mjx-container> right inside it.
+MATH_SPAN = '<span class="math">'
 
 CSS = """
 .warn { color: #8a1c2c; border: 1pt solid #8a1c2c; padding: 3pt 6pt; font-size: 9pt; }
@@ -73,6 +78,16 @@ MERMAID_JS = """<script src="%s"></script>
 </script>
 """ % MERMAID_URL
 
+# MathJax typesets the whole page on load; data-mathjax tells a DOM dump whether it finished.
+MATHJAX_JS = """<script>
+window.MathJax = {tex: %s, startup: {ready: function(){
+  MathJax.startup.defaultReady();
+  MathJax.startup.promise.then(function(){ document.documentElement.dataset.mathjax = 'done'; });
+}}};
+</script>
+<script src="%s" onerror="var p = document.createElement('p'); p.className = 'warn'; p.textContent = 'Formulas not rendered: MathJax did not load (no network?). The TeX source is printed instead.'; document.body.insertBefore(p, document.body.firstChild); document.documentElement.dataset.mathjax = 'failed';"></script>
+""" % (notes_mod.MATHJAX_TEX, notes_mod.MATHJAX_URL)
+
 
 def say(msg):
     print(msg, file=sys.stderr)
@@ -107,8 +122,9 @@ def page(exam, selected, stamp):
     body = "".join(_section(exam, p) for p in selected)
     title = exam["title"] if len(selected) != 1 else f'{selected[0]["title"]} · {exam["title"]}'
     mermaid = MERMAID_JS if MERMAID_BLOCK_RE.search(body) else ""
+    math = MATHJAX_JS if exam.get("math") in notes_mod.MATH_MODES and MATH_SPAN in body else ""
     return (f'<!doctype html>\n<html><head><meta charset="utf-8"><title>{e(title)}</title><style>{CSS}</style></head>\n'
-            f'<body data-generated="{e(stamp)}">\n{body}<p class="stamp">examkit · {e(exam["title"])} · {e(stamp)}</p>\n{mermaid}</body></html>\n')
+            f'<body data-generated="{e(stamp)}">\n{body}<p class="stamp">examkit · {e(exam["title"])} · {e(stamp)}</p>\n{mermaid}{math}</body></html>\n')
 
 
 def localize_images(p, notes_dir, out):
@@ -182,6 +198,12 @@ def unrendered_diagrams(dom):
     return sum("<svg" not in b for b in blocks), len(blocks)
 
 
+def unrendered_math(dom):
+    """(formulas without <mjx-container>, all formulas) for the <span class="math"> elements of a dumped DOM."""
+    total = dom.count(MATH_SPAN)
+    return total - dom.count(MATH_SPAN + "<mjx-container"), total
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("exam_dir", type=pathlib.Path)
@@ -211,10 +233,13 @@ def main():
         print(out)
         return
     with_mermaid = [(f, label) for f, label in written if MERMAID_BLOCK_RE.search(f.read_text(encoding="utf-8"))]
+    math_on = exam.get("math") in notes_mod.MATH_MODES
+    with_math = [(f, label) for f, label in written if math_on and MATH_SPAN in f.read_text(encoding="utf-8")]
     # One Chrome profile per run, in a temporary directory that is removed afterwards, also on errors.
     with chrome_mod.temporary_profile() as profile:
         try:
-            say(f"3. print pdf          {len(written)} pages through headless Chrome, {a.budget_ms} ms page time each")
+            say(f"3. print pdf          {len(written)} pages through headless Chrome, {a.budget_ms} ms page time each"
+                + (" (MathJax renders inside it)" if with_math else ""))
             for f, _ in written:
                 pdf = f.with_suffix(".pdf")
                 say(f"   {f.name} -> {pdf.name}")
@@ -228,13 +253,22 @@ def main():
                 if missing or not total:
                     failed.append(f"error: diagrams not rendered in {f.name} (note {label}): {missing} of {total} "
                                   "Mermaid blocks without <svg> (mermaid.js did not load or failed)")
+            if math_on:
+                say(f"5. check formulas     {len(with_math)} pages with formulas: the rendered DOM must show an <mjx-container> per formula")
+            for f, label in with_math:
+                missing, total = unrendered_math(chrome_mod.dump_dom(f, profile, budget_ms=a.budget_ms, timeout=180))
+                say(f"   {f.name}: {total - missing} of {total} formulas rendered")
+                if missing or not total:
+                    failed.append(f"error: formulas not rendered in {f.name} (note {label}): {missing} of {total} "
+                                  "formulas without MathJax output (MathJax did not load or did not finish; "
+                                  "try a larger --budget-ms)")
         except (RuntimeError, subprocess.TimeoutExpired, OSError) as e:
             say(str(e))
             say("The HTML pages are written; print them by hand or set EXAMKIT_CHROME to a working Chrome.")
             sys.exit(1)
     if failed:
         say("\n".join(failed))
-        say(f"{len(failed)} page(s) with unrendered diagrams. The PDFs are written but show diagram source instead of drawings.")
+        say(f"{len(failed)} page(s) with unrendered diagrams or formulas. The PDFs are written but show the source instead.")
         sys.exit(1)
     print(out)
 
