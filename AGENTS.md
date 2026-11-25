@@ -10,8 +10,9 @@ Read this first; it replaces a hand-over. Project rules in short:
 - **Source tiers.** Optional `exam.json.source_tiers` maps each `sources/<folder>` to
   `primary`, `official` or `hypothesis`; when set, a `source:` src must sit in a listed
   folder and a `hypothesis` folder can never back a card (`engine/validate.py`).
-- **No agent commits or pushes.** Explain the state, list files, propose a commit
-  message; the owner commits. Never run git commands that change state.
+- **Agents may commit, push only on request.** Commit only the files of the current
+  task, after the tests pass. Push only when the owner has said yes for that push.
+  No other state-changing git commands (rebase, reset, branch deletion) without asking.
 - **Explain-then-run.** Scripts print each step with a one-line explanation.
 - Code, file names, config keys, CLI text and docs are English. Card and note
   content may be in any language the exam config allows; the page UI comes from
