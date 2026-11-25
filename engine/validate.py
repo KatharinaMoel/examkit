@@ -176,7 +176,10 @@ def resolve_src(src, cov_ids, notes_dir, sources_dir, *, source_tiers=None):
             return f"src note:{rest} needs '#<heading>'"
         slug, heading = rest.split("#", 1)
         note = pathlib.Path(notes_dir) / f"{slug}.md"
-        if not note.exists():
+        if pathlib.PurePosixPath(slug).is_absolute() or ".." in pathlib.PurePosixPath(slug).parts or (
+                note.exists() and not note.resolve().is_relative_to(pathlib.Path(notes_dir).resolve())):
+            return f"src '{src}' must name a note inside the notes directory {notes_dir}"
+        if not note.is_file():
             return f"src note: file {note} does not exist"
         if not _heading_in(note, heading):
             return f"src note: {note.name} has no heading '{heading}'"
@@ -191,6 +194,12 @@ def resolve_src(src, cov_ids, notes_dir, sources_dir, *, source_tiers=None):
         return _escape_msg(src)  # a symlink inside sources/ that points outside
     if source_tiers is not None:
         tier_error = _tier_error(src, rest, source_tiers)
+        if not tier_error and path.is_file():
+            # the written path passed; a symlink inside sources/ must also pass by the folder it really points to
+            real = path.resolve().relative_to(pathlib.Path(sources_dir).resolve()).as_posix()
+            tier_error = _tier_error(src, real, source_tiers)
+            if tier_error and real != rest:
+                tier_error += f" (the link points to sources/{real})"
         if tier_error:
             return tier_error  # more specific for a trailing '/' or a bare folder
     if not path.is_file():

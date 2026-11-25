@@ -245,7 +245,9 @@ def test_symlink_pointing_outside_rejected_with_tiers(tmp_path):
     src_dir = _outside_links(tmp_path)
     msg = v.resolve_src("source:exam-guide/link.md", set(), EX / "notes", src_dir, source_tiers=TIERS)
     assert msg is not None and "source:exam-guide/link.md" in msg and "escape" in msg, msg
-    assert v.resolve_src("source:exam-guide/inside.md", set(), EX / "notes", src_dir, source_tiers=TIERS) is None
+    # inside.md stays in sources/ but points at the unlisted top-level loose.md: its target decides the tier
+    msg = v.resolve_src("source:exam-guide/inside.md", set(), EX / "notes", src_dir, source_tiers=TIERS)
+    assert msg is not None and "tier folder" in msg and "points to sources/loose.md" in msg, msg
 
 
 def test_source_directory_is_not_a_file(tmp_path):
@@ -293,3 +295,35 @@ def test_source_tier_of():
     assert v.source_tier("source:exam-guide/guide.md", TIERS) == "primary"
     assert v.source_tier("source:classroom/lesson.md", TIERS) == "official"
     assert v.source_tier("source:dummy.md", None) == "source"
+
+
+def test_symlink_tier_is_the_target_folder(tmp_path):
+    """A link inside sources/ takes the tier of its target: a primary-looking path cannot hide a hypothesis file."""
+    src_dir = _tiered_sources(tmp_path)
+    (src_dir / "exam-guide" / "alias.md").symlink_to(src_dir / "podcasts" / "x.md")
+    (src_dir / "exam-guide" / "pc").symlink_to(src_dir / "podcasts", target_is_directory=True)
+    (src_dir / "exam-guide" / "same.md").symlink_to(src_dir / "exam-guide" / "guide.md")
+    for src in ("source:exam-guide/alias.md", "source:exam-guide/pc/x.md"):
+        msg = v.resolve_src(src, set(), EX / "notes", src_dir, source_tiers=TIERS)
+        assert msg is not None and "hypothesis" in msg, (src, msg)
+    assert v.resolve_src("source:exam-guide/same.md", set(), EX / "notes", src_dir, source_tiers=TIERS) is None
+
+
+def test_note_src_never_leaves_notes_dir(tmp_path):
+    """note:<slug> resolves inside notes_dir only: no '..', no absolute path, no symlink out."""
+    notes = tmp_path / "notes"
+    notes.mkdir()
+    (tmp_path / "outside.md").write_text("# Head\n", encoding="utf-8")
+    (notes / "ok.md").write_text("# Head\n", encoding="utf-8")
+    (notes / "link.md").symlink_to(tmp_path / "outside.md")
+    for src in ("note:../outside#Head", f"note:{tmp_path}/outside#Head", "note:link#Head"):
+        msg = v.resolve_src(src, set(), notes, tmp_path / "sources")
+        assert msg is not None and "notes" in msg, (src, msg)
+    assert v.resolve_src("note:ok#Head", set(), notes, tmp_path / "sources") is None
+
+
+def test_note_src_directory_is_an_error_not_a_crash(tmp_path):
+    notes = tmp_path / "notes"
+    (notes / "dir.md").mkdir(parents=True)
+    msg = v.resolve_src("note:dir#H", set(), notes, tmp_path / "sources")
+    assert msg is not None and "does not exist" in msg, msg

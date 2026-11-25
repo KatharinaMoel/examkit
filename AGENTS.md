@@ -66,5 +66,14 @@ Next:
 2. Decide whether to publish the static CLF page (after the exam).
 3. First real feeding run for the CLF exam through the generic runbook (`~/ki-os/40-runbooks/kursmaterial-gegen-wissensbasis-abgleichen.md`, vault guide `~/ki-os/20-knowledge/anleitungen/lernkasten-fuettern.md`; runbook stays `entwurf` until that run) with the owner's classroom screenshots. Done in Session 3 without the owner: services note `05-dienste.md` (111 services, every quote checked against `sources/aws-docs/`), services coverage 111 green / 0 yellow / 0 red after 54 catalog cards (deck `catalog`, priority 3). Podcast transcripts come from the toolkit tool `media/transcribe` (publisher transcripts first, Whisper fallback) into `exams/<id>/sources/podcasts/` (tier hypothesis).
 4. Leftovers: relative images in notes reach the print pack but not the Notes tab of the built page; the smoke harness runs `flatpak info` at collection time (skipif), reads only single-word lowercase probe keys, and a raw `>` in a probe attribute could cut the probe tag on older Chromium.
+5. Open findings of the 2026-11-25 reviews (fixed the same day: chip rows and coverage rows wrap on phones, a typed or dictated
+   answer survives the late runtime, `note:` stays inside `notes_dir`, a symlink in `sources/` takes its target's tier).
+   Still open: a missing `card-ids.json` counts as an empty ledger (ids can vanish unnoticed); `"source_tiers": null` disables
+   the tier check; `check_tracked.py` only runs in CI after the push and is a deny-list (no pre-commit hook); byte-identity
+   without `math`/`origins` has no golden test; the frontmatter parser silently drops YAML block lists for `covers`; card
+   fields are not type-checked and duplicate `covers` count twice; reset does not propagate across devices (merge never
+   deletes), the first plan snapshot can replace local ticks, import accepts any numeric box and future timestamps (storage
+   protocol is frozen, so fixes need care); "Nur Fehler" (`w>0`) never empties; small touch targets in the footer; `mermaid@11`
+   unpinned; the full `exam.json` incl. `notes_dir` is embedded in the page.
 
 Before starting any of this: run the tests, then `python3 engine/build.py example`.
