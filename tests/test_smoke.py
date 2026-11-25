@@ -303,3 +303,62 @@ def test_report_in_flight_does_not_touch_the_next_card(tmp_path, built):
     assert got["draft"] == "draft on card B" and got["state"] == "" and got["disabled"] == "false"
     assert json.loads(got["sent"]) == [["feedback", ["id", "q", "status", "t", "text"], "offen", "note for card A"]]
     assert json.loads(got["errors"]) == []
+
+
+def test_chip_rows_never_hide_buttons(tmp_path, built):
+    """Every chip row shows all its buttons: many decks wrap onto further lines instead of scrolling out of view."""
+    html, _ = built
+    probe = """
+  const row = document.getElementById('chips');
+  for (let i = 0; i < 12; i++) row.insertAdjacentHTML('beforeend', '<button class="chip">Deck number ' + i + '<small>99</small></button>');
+  d.dataset.overflow = JSON.stringify([...document.querySelectorAll('.chips')]
+    .filter(r => r.offsetParent && r.scrollWidth > r.clientWidth + 1).map(r => r.id || r.dataset.uiLabel || '?'));
+"""
+    assert json.loads(smoke(tmp_path, html, extra_js=probe)["overflow"]) == []
+
+
+FAKE_RUNTIME = """<script>
+(()=>{ // the cloud says the open card is settled, so a careless next() would swap it for another one
+  const settled = () => { const a = document.getElementById('ans'), id = a && a.dataset.cid;
+    return id ? {[id]: {b: 3, r: 3, w: 0, k: 1, dn: 1e9, t: Date.now()}} : {}; };
+  const doc = () => ({get: async () => ({exists: true, data: () => ({cards: settled(), done: {}, e: []})}),
+  set: async () => {}, update: async () => {}, onSnapshot: () => () => {}});
+  const db = {doc, collection: () => ({add: async () => {}})};
+  window.claude = {use: n => new Promise(r => setTimeout(() => r(n === 'sample' ? (async () => '{}') : db), n === 'sample' ? 150 : 250))};
+  addEventListener('DOMContentLoaded', () => { const a = document.getElementById('ans'); a.focus(); a.value = 'MY ANSWER';
+    window.__firstCard = a.dataset.cid; window.__firstField = a; });
+})();
+</script>"""
+
+
+def test_typed_answer_survives_late_runtime(tmp_path, built):
+    """sample and db arrive after the first render: a typed answer and its card stay put."""
+    html, _ = built
+    html = html.replace(CHARSET, CHARSET + FAKE_RUNTIME, 1)
+    probe = """
+  const a = document.getElementById('ans');
+  d.dataset.answer = (a||{}).value || '';
+  d.dataset.same = a && a === window.__firstField && a.dataset.cid === window.__firstCard ? 'yes' : 'no';
+  d.dataset.check = document.getElementById('check') ? 'yes' : 'no';
+"""
+    got = smoke(tmp_path, html, extra_js=probe)
+    assert got["answer"] == "MY ANSWER" and got["check"] == "yes" and got["same"] == "yes", got
+
+
+def test_tabs_fit_a_narrow_phone(tmp_path, built):
+    """At 320 px CSS width no tab is wider than the screen (the coverage counts once pushed the page sideways)."""
+    html, _ = built
+    probe = """
+  document.body.style.width = '320px'; document.body.style.boxSizing = 'border-box';
+  const wide = [];
+  for (const v of ['cards','coverage','notes','plan']) {
+    document.getElementById('tab-' + v).click();
+    document.querySelectorAll('#view-' + v + ' details').forEach(x => x.open = true);
+    const b = document.querySelector('#view-' + v + ' details.cov summary b');
+    if (b) b.textContent = 'aws-application-discovery-service';  // the longest kind of id in a real exam
+    const sec = document.getElementById('view-' + v);
+    if (sec.scrollWidth > document.body.clientWidth + 1) wide.push(v + ':' + sec.scrollWidth);
+  }
+  d.dataset.wide = JSON.stringify(wide);
+"""
+    assert json.loads(smoke(tmp_path, html, extra_js=probe)["wide"]) == []

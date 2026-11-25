@@ -47,8 +47,8 @@ h1{font-size:19px;margin:0;letter-spacing:.01em;text-wrap:balance}
 .box{font:inherit;color:inherit;text-align:left;cursor:pointer}
 .box[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
 .fachinfo{font-size:13.5px;color:var(--muted)}.fachinfo button{font:inherit;font-size:13.5px;background:none;border:none;color:var(--accent);padding:0;cursor:pointer;text-decoration:underline}
-.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
-.chips::-webkit-scrollbar{display:none}
+/* Chip rows wrap: with many decks a hidden horizontal scroll cut buttons off at the screen edge */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{flex:none;font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .hoerstate{font-family:var(--mono);font-size:12.5px;color:var(--accent)}
@@ -115,9 +115,10 @@ footer.build{max-width:560px;margin:14px auto 0;font-family:var(--mono);font-siz
 .cov-sum{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:15px}
 .cov-sum b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums}
 details.cov{border-top:1px solid var(--rule);padding:6px 0}
-details.cov summary{cursor:pointer;display:flex;gap:6px;align-items:baseline;font-size:15px;list-style:none}
+details.cov summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;font-size:15px;list-style:none}
+details.cov summary span:not(.covn){flex:1 1 12em;min-width:0}
 details.cov summary::-webkit-details-marker{display:none}
-details.cov summary b{font-family:var(--mono);font-weight:500;font-size:13px;color:var(--muted);flex:none}
+details.cov summary b{font-family:var(--mono);font-weight:500;font-size:13px;color:var(--muted);flex:none;max-width:100%;overflow-wrap:anywhere}
 details.cov summary .covn{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted);flex:none;white-space:nowrap}
 details.cov ul{margin:4px 0 0;padding-left:20px;font-size:14px;color:var(--muted)}
 details.cov .covnotes{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
@@ -457,15 +458,28 @@ function renderChips(){
   $('weakonly').setAttribute('aria-pressed', ui.weak);
 }
 
+// Late "sample" runtime: put the check button next to "flip" without rebuilding the card (keeps typing/dictation alive)
+function addCheck(){
+  const f = $('flip'), c = ui.cur;
+  if(!f || !c || $('check') || aiOff){ if(!f) render(); return; }
+  f.insertAdjacentHTML('afterend', `<button class="btn primary" id="check">${T('check')}</button>`);
+  $('check').onclick = ()=>check(c, $('ans').value.trim());
+}
+
 function next(){
   if(ui.fach!=null && ui.cur) ui.fachSeen.add(ui.cur.id);
+  const a = $('ans'); if(a) a.dataset.cid = '';  // a deliberately drawn card starts with an empty answer
   ui.cur = pick(); ui.revealed=false; ui.verdict=null; render();
   if(hoer.on && !hoer.paused) hoerCard();
 }
 
+// True while the learner is typing or dictating an answer: late runtime events must not rebuild the card then
+const answering = ()=>{ const a = $('ans'); return !!a && (a.value.trim()!=='' || document.activeElement===a); };
+
 function render(){
   counts();
   const c = ui.cur, s = $('stage');
+  const old = $('ans'), keep = old && c && old.dataset.cid===c.id ? {v: old.value, f: document.activeElement===old, a: old.selectionStart, b: old.selectionEnd} : null;
   if(!c){
     if(ui.fach!=null){
       s.innerHTML = `<div class="empty"><strong>${T('empty_box', {name: FACHNAME[ui.fach]})}</strong><div class="row"><button class="btn primary" type="button" id="fachnochmal">${T('again_box')}</button><button class="btn" type="button" id="fachende">${T('back_normal')}</button></div></div>`;
@@ -482,7 +496,7 @@ function render(){
     <div class="q">${esc(c.q)}</div></article>`;
   if(!ui.revealed){
     html += `<div class="answer-in"><label class="hint" for="ans">${T('answer_label')}</label>
-      <textarea id="ans" placeholder="${esc(T('answer_placeholder'))}"></textarea>
+      <textarea id="ans" data-cid="${esc(c.id)}" placeholder="${esc(T('answer_placeholder'))}"></textarea>
       <div class="row"><button class="btn" id="flip">${T('flip')}</button>
       ${sample && !aiOff ? `<button class="btn primary" id="check">${T('check')}</button>`:''}</div>
       <div class="row"><button class="btn" id="speak" type="button">${T('speak')}</button><button class="btn" id="skip" type="button">${T('later')}</button></div></div>
@@ -507,6 +521,8 @@ function render(){
   }
   const draft = reportDraft(c);
   s.innerHTML = html;
+  const ans = $('ans');
+  if(keep && ans){ ans.value = keep.v; if(keep.f){ ans.focus(); try{ ans.setSelectionRange(keep.a, keep.b); }catch(e){} } }
   wireReport(c, draft);
   if(!ui.revealed){
     $('flip').onclick = ()=>{ ui.revealed=true; render(); };
@@ -982,7 +998,7 @@ renderChips(); next();
 (async ()=>{
   const cl = window.claude;
   if(!cl || !cl.use){ $('sync').textContent = T('sync_local'); return; }
-  cl.use('sample').then(s=>{ sample = s; if(s && !ui.revealed) render(); }).catch(()=>{});
+  cl.use('sample').then(s=>{ sample = s; if(s && !ui.revealed) addCheck(); }).catch(()=>{});
   try{
     db = await cl.use('db');
     if(!db){ $('sync').textContent = T('sync_local'); return; }
@@ -992,7 +1008,7 @@ renderChips(); next();
     const remote = snap.exists ? ((snap.data()||{}).cards || {}) : {};
     // Does this device have grades that are not in the cloud yet (e.g. answered offline)?
     const ahead = Object.entries(state.cards).some(([id,L]) => !remote[id] || (L.t||0) > (remote[id].t||0));
-    if(snap.exists){ merge(remote); saveLocal(); counts(); if(!ui.revealed) next(); }
+    if(snap.exists){ merge(remote); saveLocal(); counts(); if(!ui.revealed && !answering()) next(); }
     if(ahead){ dirty = true; pushAll(); }
     $('sync').textContent = T('sync_synced');
     planRef = db.doc('fortschritt/plan');
