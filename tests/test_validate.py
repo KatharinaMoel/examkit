@@ -126,6 +126,13 @@ def test_unsure_and_conflict_must_be_strings():
     assert not any("unsure" in m for m in _with(unsure="Checked against the 2026 guide only"))
 
 
+def test_memo_must_be_a_string():
+    """memo is an optional mnemonic for the card back: a non-empty string, no source needed."""
+    assert any("memo must be a non-empty string" in m for m in _with(memo=["x"]))
+    assert any("memo must be a non-empty string" in m for m in _with(memo=" "))
+    assert not any("memo" in m for m in _with(memo="Fargate: containers run, servers stay far away"))
+
+
 def test_null_languages_and_decks_do_not_crash():
     _, _, cards = load()
     msgs = run(cards, exam={"decks": None, "languages": None})

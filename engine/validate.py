@@ -258,7 +258,7 @@ def validate(cards, exam, coverage, notes_dir, sources_dir) -> list[str]:
             errors.append(f"{label}: lang '{c['lang']}' not in exam.languages {sorted(langs)}")
         if "key" in c and c["key"] not in ("", None, []) and not _is_str_list(c["key"]):
             errors.append(f"{label}: key must be a list of strings")
-        for f in ("unsure", "conflict"):
+        for f in ("unsure", "conflict", "memo"):
             if f in c and (not isinstance(c[f], str) or not c[f].strip()):
                 errors.append(f"{label}: {f} must be a non-empty string")
         errors += [f"{label}: {m}" for m in _origin_errors(c, origins)]

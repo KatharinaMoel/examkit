@@ -81,6 +81,7 @@
   "unsure_prefix": "⚠ Unsicher: ",
   "conflict_prefix": "⚠ Zwei Fassungen: ",
   "context": "Hintergrund",
+  "memo": "Eselsbrücke (Merkhilfe, keine Quelle)",
   "model_marker": " · Modellwissen, ungeprüft",
   "source_prefix": "Quelle: ",
   "read_note": "Notiz lesen →",

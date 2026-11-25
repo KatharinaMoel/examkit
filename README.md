@@ -91,6 +91,13 @@ A card may then carry `origin` (one of these keys) and `origin_detail` (short fr
 - Without `origins` the page is built exactly as before: the origin code (`engine/template/origin.html`
   and the `/*ORIGIN_...*/` hooks in the template) and the `origin_*` UI strings are left out.
 
+## Mnemonics
+
+A card may carry `memo`, a short memory aid (an image or a play on the name) shown on the back of the
+card under its own label ("Mnemonic (memory aid, not a source)"). It needs no source because it adds no
+fact: the answer and context stay the sourced part, and the memo only hooks onto them. It must be a
+non-empty string.
+
 ## Progress file
 
 "Save progress" writes a JSON file with every grade, the history and the plan ticks; "Load progress"

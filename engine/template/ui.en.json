@@ -81,6 +81,7 @@
   "unsure_prefix": "⚠ Unsure: ",
   "conflict_prefix": "⚠ Two versions: ",
   "context": "Background",
+  "memo": "Mnemonic (memory aid, not a source)",
   "model_marker": " · model knowledge, unverified",
   "source_prefix": "Source: ",
   "read_note": "Read the note →",

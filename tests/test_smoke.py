@@ -362,3 +362,22 @@ def test_tabs_fit_a_narrow_phone(tmp_path, built):
   d.dataset.wide = JSON.stringify(wide);
 """
     assert json.loads(smoke(tmp_path, html, extra_js=probe)["wide"]) == []
+
+
+def test_memo_shows_on_the_back_marked_as_memory_aid(tmp_path, built):
+    """A card memo appears on the back only, under its own label, so it is never mistaken for a source."""
+    html, _ = built
+    head, rest = html.split('<script id="cards" type="application/json">', 1)
+    data, tail = rest.split("</script>", 1)
+    cards = [dict(c, memo="MEMO <b>hook</b>") for c in json.loads(data)]
+    html = head + '<script id="cards" type="application/json">' + json.dumps(cards) + "</script>" + tail
+    probe = """
+  d.dataset.front = document.querySelector('#stage .memo') ? 'yes' : 'no';
+  document.getElementById('flip').click();
+  const m = document.querySelector('#stage .back .memo');
+  d.dataset.text = m ? m.textContent : '';
+  d.dataset.bold = m && m.querySelector('b') ? 'yes' : 'no';
+"""
+    got = smoke(tmp_path, html, extra_js=probe)
+    assert got["front"] == "no" and got["bold"] == "no", got
+    assert got["text"].startswith("Mnemonic") and "MEMO <b>hook</b>" in got["text"], got
