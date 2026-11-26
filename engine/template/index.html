@@ -76,6 +76,14 @@ textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outl
 .solution .more{font:inherit;font-size:14.5px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;align-self:flex-start}
 .tagrow{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--muted)}.tag{font:inherit;font-size:13.5px;background:none;border:1px dashed var(--line);border-radius:999px;padding:3px 10px;color:var(--muted);cursor:pointer}.tag[aria-pressed="true"]{border-style:solid;border-color:var(--accent);color:var(--accent);font-weight:700}
 .hitem{display:flex;flex-direction:column;gap:4px;padding:8px 0;border-top:1px solid var(--rule)}.hq{font-size:14px;color:var(--ink)}#hist{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px 12px}
+/* History entries and "last graded" fold out the answer on demand; flat solution, no box inside a box */
+.hsol summary{cursor:pointer;min-height:44px;box-sizing:border-box;padding:10px 0;display:list-item}
+#hist .tag{min-height:44px}
+.hhint{display:block;font-size:13px;color:var(--muted);padding:8px 0 4px}
+.solution.flat{border:none;background:none;padding:4px 0 8px;border-radius:0}
+.solution.flat .a{font-size:16px}.solution.flat .ctx,.solution.flat .memo{font-size:14.5px}
+.prev .pq{font-size:14.5px;color:var(--ink);font-weight:700;margin:2px 0 0}.prev .solution{color:var(--ink)}
+.card:focus{outline:none}
 .report{font-size:14px;color:var(--muted);border-top:1px solid var(--rule);margin-top:4px}.report summary{cursor:pointer;padding:12px 0;min-height:44px;box-sizing:border-box;color:var(--accent)}.report textarea{min-height:64px;font-size:16px;margin:6px 0}.repstate{font-size:13.5px}
 .solution .src{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .solution .memo{border-left:3px solid var(--mid);padding:2px 0 2px 10px;font-size:15px;line-height:1.5;white-space:pre-line}
@@ -484,8 +492,8 @@ function render(){
   if(!c){
     if(ui.fach!=null){
       s.innerHTML = `<div class="empty"><strong>${T('empty_box', {name: FACHNAME[ui.fach]})}</strong><div class="row"><button class="btn primary" type="button" id="fachnochmal">${T('again_box')}</button><button class="btn" type="button" id="fachende">${T('back_normal')}</button></div></div>`;
-      $('fachnochmal').onclick = ()=>{ ui.fachSeen = new Set(); ui.cur = null; next(); };
-      $('fachende').onclick = ()=>setFach(null);
+      $('fachnochmal').onclick = ()=>{ ui.fachSeen = new Set(); ui.cur = null; next(); toCard(); };
+      $('fachende').onclick = ()=>{ setFach(null); toCard(); };
       return;
     }
     s.innerHTML = `<div class="empty"><strong>${T('empty_selection')}</strong></div>`;
@@ -493,7 +501,7 @@ function render(){
   }
   const S = st(c.id);
   const fach = S.b===0 ? T('box_0') : S.b>=3 ? T('box_3') : T('box_n', {n: S.b});
-  let html = `<article class="card"><div class="card-head"><span>${esc(DECKS[c.deck]||c.deck)}${prio(c)===1 ? T('prio1') : prio(c)===3 ? T('prio3') : ''}${S.u ? T('own_choice') : ''}</span><span>${fach}${S.w ? T('wrong_times', {n: S.w}) : ''}</span></div>/*ORIGIN_BADGE*/
+  let html = `<article class="card" tabindex="-1"><div class="card-head"><span>${esc(DECKS[c.deck]||c.deck)}${prio(c)===1 ? T('prio1') : prio(c)===3 ? T('prio3') : ''}${S.u ? T('own_choice') : ''}</span><span>${fach}${S.w ? T('wrong_times', {n: S.w}) : ''}</span></div>/*ORIGIN_BADGE*/
     <div class="q">${esc(c.q)}</div></article>`;
   if(!ui.revealed){
     html += `<div class="answer-in"><label class="hint" for="ans">${T('answer_label')}</label>
@@ -501,7 +509,7 @@ function render(){
       <div class="row"><button class="btn" id="flip">${T('flip')}</button>
       ${sample && !aiOff ? `<button class="btn primary" id="check">${T('check')}</button>`:''}</div>
       <div class="row"><button class="btn" id="speak" type="button">${T('speak')}</button><button class="btn" id="skip" type="button">${T('later')}</button></div></div>
-      ${reportBlock(c)}`;
+      ${prevBlock(c)}${reportBlock(c)}`;
   } else {
     const v = ui.verdict;
     html += `<div class="back">`;
@@ -510,8 +518,7 @@ function render(){
       else if(v.err) html += `<div class="verdict teilweise">${esc(v.err)}</div>`;
       else html += `<div class="verdict ${v.urteil}"><b>${esc(T(`verdict_${v.urteil}`))}</b>${v.fehlt? ' · '+esc(v.fehlt):''}</div>`;
     }
-    html += `<div class="solution"><span class="lbl">${T('solution')}</span><div class="a">${esc(c.a)}</div>${c.unsure?`<div class="unsure">${T('unsure_prefix')}${esc(c.unsure)}</div>`:''}${c.conflict?`<div class="unsure">${T('conflict_prefix')}${esc(c.conflict)}</div>`:''}${c.ctx?`<div class="ctx"><span class="lbl">${T('context')}${c.ctx_src === 'model' ? T('model_marker') : ''}</span><div>${esc(c.ctx)}</div></div>`:''}${c.memo?`<div class="memo"><span class="lbl">${T('memo')}</span><div>${esc(c.memo)}</div></div>`:''}
-      <span class="src">${T('source_prefix')}${esc(c.src)}</span>${noteRef(c.src)?`<button type="button" class="more" id="readnote">${T('read_note')}</button>`:''}</div>
+    html += `<div class="solution">${solutionHTML(c)}</div>
       <div class="grade">
         <button class="btn g-bad ${v&&v.urteil==='falsch'?'sug':''}" data-g="0">${T('grade_0')}</button>
         <button class="btn g-mid ${v&&v.urteil==='teilweise'?'sug':''}" data-g="1">${T('grade_1')}</button>
@@ -533,9 +540,33 @@ function render(){
   } else {
     s.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>grade(c, +b.dataset.g));
     s.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>tag(c, b.dataset.u));
-    const rn = $('readnote'); if(rn) rn.onclick = ()=>{ const r = noteRef(c.src); window.examkitNote(r.slug, r.heading); };
   }
 }
+
+// The inside of a solution box: answer, notes, context, memo, source. Shared by the card back, the history and "last graded".
+function solutionHTML(c){
+  return `<span class="lbl">${T('solution')}</span><div class="a">${esc(c.a)}</div>${c.unsure?`<div class="unsure">${T('unsure_prefix')}${esc(c.unsure)}</div>`:''}${c.conflict?`<div class="unsure">${T('conflict_prefix')}${esc(c.conflict)}</div>`:''}${c.ctx?`<div class="ctx"><span class="lbl">${T('context')}${c.ctx_src === 'model' ? T('model_marker') : ''}</span><div>${esc(c.ctx)}</div></div>`:''}${c.memo?`<div class="memo"><span class="lbl">${T('memo')}</span><div>${esc(c.memo)}</div></div>`:''}
+      <span class="src">${T('source_prefix')}${esc(c.src)}</span>${noteRef(c.src)?`<button type="button" class="more" data-readnote="${esc(c.id)}">${T('read_note')}</button>`:''}`;
+}
+// Collapsed answer of the card graded last in this session, on the front of the next card (memory only, never stored)
+function prevBlock(c){
+  const L = ui.lastGraded; if(!L || L.id===c.id) return '';
+  const h = hist.find(x=>x.id===L.id && x.t===L.t), p = BYID[L.id]; if(!h || !p) return '';
+  return `<details class="report prev"><summary>${T('prev_summary', {g: GNAME[h.g]})}</summary>
+        <div class="pq">${esc(p.q)}</div><div class="solution flat">${solutionHTML(p)}</div></details>`;
+}
+// After the learner moves on herself (grade, later, again): the new card's top in view, focus on the card, never on
+// the answer field (the iOS keyboard would pop up). Not in next(): that also runs on load, sync, filters and import.
+function toCard(){
+  const s = $('stage'), top = s.getBoundingClientRect().top;
+  if(top < 8) window.scrollTo(0, window.scrollY + top - 12);
+  const card = s.querySelector('.card'), a = document.activeElement;
+  if(card && (!a || a===document.body || s.contains(a))) try{ card.focus({preventScroll:true}); }catch(e){}
+}
+document.addEventListener('click', e=>{
+  const b = e.target.closest('[data-readnote]'); if(!b) return;
+  const c = BYID[b.dataset.readnote], r = c && noteRef(c.src); if(r) window.examkitNote(r.slug, r.heading);
+});
 
 function remember(id){ ui.last.push(id); if(ui.last.length>3) ui.last.shift(); }
 
@@ -676,7 +707,7 @@ async function hoerCard(){
   }
   const g = deuten(r.alts||[]);
   if(g==='stop'){ await say([[T('hoer_ended'), T('tts_lang')]]); if(alive()) hoerStop(); return; }
-  if(g==='again'){ ui.revealed = false; render(); hoerCard(); return; }
+  if(g==='again'){ ui.revealed = false; render(); toCard(); hoerCard(); return; }
   if(g==='later'){ hoerUI(T('hoer_later')); await say([[T('hoer_later'), T('tts_lang')]]); if(alive()) later(c); return; }
   if(g===null){
     const gehoert = r.alts && r.alts[0] ? T('hoer_heard', {t: r.alts[0]}) : '';
@@ -751,8 +782,8 @@ function grade(c, g){
   ui.newRun = prev.b===0 ? ui.newRun+1 : 0;
   const S = applyGrade(prev, g);
   state.cards[c.id] = S; saveLocal(); persist(c.id, S);
-  logHist(c.id, g, prev);
-  remember(c.id); next();
+  logHist(c.id, g, prev); ui.lastGraded = {id: c.id, t: hist[0].t};
+  remember(c.id); next(); toCard();
 }
 
 // History of the latest grades: local and in the database (fortschritt/verlauf), so it is the same on all devices
@@ -777,10 +808,12 @@ function renderHist(){
   if(!hist.length){ box.innerHTML = `<span class="none">${T('hist_empty')}</span>`; return; }
   const latest = new Set(), seenId = new Set();
   hist.forEach((h,i)=>{ if(!seenId.has(h.id)){ seenId.add(h.id); latest.add(i); } });
-  box.innerHTML = hist.map((h,i)=>{ const c = BYID[h.id]; if(!c) return '';
-    const zeit = new Date(h.t).toLocaleTimeString(T('locale'),{hour:'2-digit',minute:'2-digit'});
+  // Entries the learner has folded out stay open when the list is rebuilt (re-grade, new grade, sync)
+  const open = new Set([...box.querySelectorAll('details.hsol[open]')].map(d=>d.dataset.hk));
+  box.innerHTML = `<span class="hhint">${T('hist_hint')}</span>` + hist.map((h,i)=>{ const c = BYID[h.id]; if(!c) return '';
+    const zeit = new Date(h.t).toLocaleTimeString(T('locale'),{hour:'2-digit',minute:'2-digit'}), hk = h.id+'@'+h.t;
     const knoepfe = latest.has(i) ? GNAME.map((n,g)=>`<button type="button" class="tag" data-hi="${i}" data-hg="${g}" aria-pressed="${h.g===g}">${n}</button>`).join('') : `<span class="none">${T('hist_regraded')}</span>`;
-    return `<div class="hitem"><span class="hq">${zeit} · ${esc(c.q)}</span><div class="tagrow">${knoepfe}</div></div>`; }).join('');
+    return `<div class="hitem"><details class="hsol" data-hk="${esc(hk)}"${open.has(hk)?' open':''}><summary><span class="hq">${zeit} · ${esc(c.q)}</span></summary><div class="solution flat">${solutionHTML(c)}</div></details><div class="tagrow">${knoepfe}</div></div>`; }).join('');
   box.querySelectorAll('[data-hi]').forEach(b=>b.onclick=()=>regrade(+b.dataset.hi, +b.dataset.hg));
 }
 function regrade(i, g){
@@ -801,13 +834,13 @@ function reportBlock(c){
 }
 // An unsent note survives re-renders of the same card (flip, AI check): read it before the stage is replaced
 function reportDraft(c){
-  const box = document.querySelector('#stage details.report');
+  const box = document.querySelector('#stage details.report[data-card]');
   if(!box || box.dataset.card !== c.id) return null;
   return {text: $('rep').value, open: box.open};
 }
 function wireReport(c, draft){
   $('repsend').onclick = ()=>report(c);
-  if(draft && (draft.text || draft.open)){ $('rep').value = draft.text; document.querySelector('#stage details.report').open = true; }
+  if(draft && (draft.text || draft.open)){ $('rep').value = draft.text; document.querySelector('#stage details.report[data-card]').open = true; }
 }
 // While a send is in flight the stage may be re-rendered: after the await only a block of the SAME card
 // (the current one, else the captured, now detached one) is touched, so the next card's draft stays intact.
@@ -821,7 +854,7 @@ async function report(c){
     await db.collection('feedback').add({id: c.id, q: c.q, text, status: 'offen', t: Date.now()});
     msg = T('report_saved');
   }catch(e){ msg = T('report_failed'); }
-  const box = document.querySelector('#stage details.report');
+  const box = document.querySelector('#stage details.report[data-card]');
   const same = box && box.dataset.card === c.id && box.querySelector('#rep') !== ta;
   const [ta2, btn2, out2] = same ? [box.querySelector('#rep'), box.querySelector('#repsend'), box.querySelector('#repstate')] : [ta, btn, out];
   if(msg === T('report_saved') && ta2.value.trim() === text) ta2.value = '';
@@ -841,7 +874,7 @@ function later(c){
   ui.newRun = S.b===0 ? ui.newRun+1 : 0;
   S.dn = counter() + LATER; S.t = Date.now();
   state.cards[c.id] = S; saveLocal(); persist(c.id, S);
-  remember(c.id); next();
+  remember(c.id); next(); toCard();
 }
 
 function persist(id, S){

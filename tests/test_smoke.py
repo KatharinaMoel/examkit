@@ -381,3 +381,74 @@ def test_memo_shows_on_the_back_marked_as_memory_aid(tmp_path, built):
     got = smoke(tmp_path, html, extra_js=probe)
     assert got["front"] == "no" and got["bold"] == "no", got
     assert got["text"].startswith("Mnemonic") and "MEMO <b>hook</b>" in got["text"], got
+
+
+def test_grading_lands_on_the_next_card(tmp_path, built):
+    """After grading or "later" far down the page, the next card's top is in view and the card (not the answer field) has focus."""
+    html, _ = built
+    probe = """
+  document.body.style.paddingBottom = '4000px';  // a tall page, like a long back on a phone
+  const after = btn => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    const before = Math.round(document.getElementById('stage').getBoundingClientRect().top);
+    document.querySelector(btn).click();
+    const top = Math.round(document.getElementById('stage').getBoundingClientRect().top);
+    const a = document.activeElement;
+    return [before, top, a && a.classList.contains('card') ? 'card' : (a ? a.tagName : '')];
+  };
+  document.getElementById('flip').click();
+  d.dataset.grade = JSON.stringify(after('[data-g="2"]'));
+  d.dataset.skip = JSON.stringify(after('#skip'));
+"""
+    got = smoke(tmp_path, html, extra_js=probe)
+    for k in ("grade", "skip"):
+        before, top, focus = json.loads(got[k])
+        assert before < 0 and 0 <= top <= 20 and focus == "card", (k, got[k])
+
+
+def test_history_folds_out_the_answer_and_keeps_it_open(tmp_path, built):
+    """A history entry shows the model answer on demand and stays open after a re-grade."""
+    html, cards = built
+    probe = """
+  document.getElementById('flip').click();
+  document.querySelector('[data-g="0"]').click();
+  document.getElementById('histbtn').click();
+  const det = document.querySelector('#hist details.hsol');
+  d.dataset.closed = det && !det.open ? 'yes' : 'no';
+  det.open = true;
+  d.dataset.answer = (det.querySelector('.solution .a')||{}).textContent || '';
+  document.querySelector('#hist [data-hg="2"]').click();
+  const det2 = document.querySelector('#hist details.hsol');
+  d.dataset.reopen = det2 && det2.open ? 'yes' : 'no';
+  d.dataset.pressed = (document.querySelector('#hist [data-hg="2"]')||{}).getAttribute('aria-pressed') || '';
+"""
+    got = smoke(tmp_path, html, extra_js=probe)
+    answers = {c["a"] for c in cards}
+    assert got["closed"] == "yes" and got["answer"] in answers, got
+    assert got["reopen"] == "yes" and got["pressed"] == "true", got
+
+
+def test_next_card_offers_the_last_graded_answer(tmp_path, built):
+    """After grading, the next card's front carries a collapsed "last graded" block with that card's answer;
+    the feedback block still belongs to the current card."""
+    html, cards = built
+    probe = """
+  d.dataset.first = document.querySelector('#stage details.prev') ? 'yes' : 'no';
+  const firstQ = document.querySelector('#stage .q').textContent;
+  document.getElementById('flip').click();
+  document.querySelector('[data-g="1"]').click();
+  const p = document.querySelector('#stage details.prev');
+  d.dataset.open = p && p.open ? 'yes' : 'no';
+  d.dataset.prevq = p ? p.querySelector('.pq').textContent : '';
+  d.dataset.firstq = firstQ;
+  d.dataset.answer = p ? (p.querySelector('.solution .a')||{}).textContent : '';
+  d.dataset.summary = p ? p.querySelector('summary').textContent : '';
+  const r = document.querySelector('#stage details.report[data-card]');
+  d.dataset.repcard = r ? r.dataset.card : '';
+  d.dataset.cur = document.querySelector('#ans').dataset.cid;
+"""
+    got = smoke(tmp_path, html, extra_js=probe)
+    assert got["first"] == "no" and got["open"] == "no", got
+    assert got["prevq"] == got["firstq"] and got["answer"] in {c["a"] for c in cards}, got
+    assert "Partly" in got["summary"] or "Teilweise" in got["summary"], got
+    assert got["repcard"] == got["cur"], got
